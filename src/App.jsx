@@ -1074,6 +1074,135 @@ function MapTab() {
   );
 }
 
+// ─── FOOD TAB ─────────────────────────────────────────────────────────────────
+const REST_ICONS = { cascada:"🌊", rancho:"🔥", pizzalago:"🍕" };
+
+function FoodTab({ onToast }) {
+  const [cart, setCart]       = useState({});
+  const [open, setOpen]       = useState(null);
+  const [paying, setPaying]   = useState(false);
+  const [qr, setQr]           = useState(null);
+
+  const add = (item) =>
+    setCart(p => ({ ...p, [item.id]: { ...item, qty: (p[item.id]?.qty || 0) + 1 } }));
+  const sub = (item) =>
+    setCart(p => {
+      const qty = (p[item.id]?.qty || 1) - 1;
+      if (qty <= 0) { const n = { ...p }; delete n[item.id]; return n; }
+      return { ...p, [item.id]: { ...item, qty } };
+    });
+
+  const cartItems  = Object.values(cart);
+  const itemCount  = cartItems.reduce((s, i) => s + i.qty, 0);
+  const total      = cartItems.reduce((s, i) => s + i.price * i.qty, 0);
+
+  const checkout = () => {
+    setPaying(true);
+    setTimeout(() => {
+      setPaying(false);
+      const code = genCode("FD");
+      setQr({ title:"Pedido confirmado", subtitle:"Presenta en caja del restaurante", code });
+      setCart({});
+      onToast("¡Ganaste 50 pts Piscilago! 🌟", "success");
+    }, 2000);
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-32 space-y-3">
+        <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase px-0.5">
+          Restaurantes
+        </p>
+
+        {RESTAURANTS.map(rest => (
+          <div key={rest.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            {/* Restaurant header */}
+            <button
+              onClick={() => setOpen(open === rest.id ? null : rest.id)}
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-gray-50 transition-colors">
+              <div className="w-11 h-11 rounded-xl bg-brand-50 flex items-center justify-center text-2xl flex-shrink-0">
+                {REST_ICONS[rest.id]}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-gray-900 text-sm">{rest.name}</p>
+                <p className="text-xs text-gray-400 truncate">{rest.desc}</p>
+              </div>
+              <div className={`text-gray-400 transition-transform ${open === rest.id ? "rotate-180" : ""}`}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </div>
+            </button>
+
+            {/* Menu items */}
+            {open === rest.id && (
+              <div className="border-t border-gray-100 divide-y divide-gray-50">
+                {rest.items.map(item => {
+                  const qty = cart[item.id]?.qty || 0;
+                  return (
+                    <div key={item.id} className="flex items-center gap-3 px-4 py-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-800">{item.name}</p>
+                        <p className="text-xs font-bold text-brand-600 mt-0.5">{fmtCOP(item.price)}</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {qty > 0 ? (
+                          <>
+                            <button onClick={() => sub(item)}
+                              className="w-7 h-7 rounded-lg bg-red-50 border border-red-200 text-red-500 font-black text-sm flex items-center justify-center active:scale-95 transition-all">
+                              −
+                            </button>
+                            <span className="text-sm font-black text-gray-900 w-4 text-center">{qty}</span>
+                          </>
+                        ) : null}
+                        <button onClick={() => add(item)}
+                          className="w-7 h-7 rounded-lg bg-brand-600 text-white font-black text-sm flex items-center justify-center active:scale-95 transition-all shadow-sm">
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Floating cart */}
+      {itemCount > 0 && !qr && (
+        <div className="absolute bottom-16 left-4 right-4 z-20">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            {/* Cart summary */}
+            <div className="px-4 py-3 space-y-1.5 max-h-36 overflow-y-auto">
+              {cartItems.map(item => (
+                <div key={item.id} className="flex justify-between text-xs">
+                  <span className="text-gray-600 font-medium">{item.name} × {item.qty}</span>
+                  <span className="font-bold text-gray-900">{fmtCOP(item.price * item.qty)}</span>
+                </div>
+              ))}
+              <div className="border-t border-dashed border-gray-200 pt-1.5 flex justify-between">
+                <span className="font-black text-gray-900 text-sm">Total</span>
+                <span className="font-black text-brand-700 text-sm">{fmtCOP(total)}</span>
+              </div>
+            </div>
+            {/* Checkout button */}
+            <button onClick={checkout} disabled={paying}
+              className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-bold py-3.5 text-sm transition-all disabled:opacity-60">
+              {paying
+                ? <><span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full" /> Procesando…</>
+                : <><UtensilsCrossed size={15} strokeWidth={2.5} /> Confirmar pedido · {fmtCOP(total)}</>
+              }
+            </button>
+          </div>
+        </div>
+      )}
+
+      {qr && <QRModal {...qr} onClose={() => setQr(null)} />}
+    </div>
+  );
+}
+
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
 function Dashboard({ user, reservations, onReserve, onLogout, fastPass, setFastPass, onToast, showFPPopup, onDismissPopup }) {
   const [activeTab, setActiveTab] = useState("atracciones");
@@ -1082,13 +1211,13 @@ function Dashboard({ user, reservations, onReserve, onLogout, fastPass, setFastP
     <div className="flex flex-col h-full bg-gray-50">
       <DashboardHeader user={user} fastPassActive={fastPass?.confirmed} onLogout={onLogout} />
 
-      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0 relative">
         <div className="flex-1 overflow-y-auto">
           {activeTab === "atracciones" && (
             <AttractionsTab reservations={reservations} onReserve={onReserve} onToast={onToast} />
           )}
           {activeTab === "mapa"     && <MapTab />}
-          {activeTab === "comida"   && <TabPlaceholder icon={UtensilsCrossed} label="Comida" />}
+          {activeTab === "comida"   && <FoodTab onToast={onToast} />}
           {activeTab === "fastpass" && (
             <FastPassTab user={user} fastPass={fastPass} setFastPass={setFastPass} onToast={onToast} />
           )}
