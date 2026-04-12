@@ -1,9 +1,10 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   User, Lock, Mail, Phone, CreditCard, Calendar,
   Eye, EyeOff, Zap, ShieldCheck, RefreshCw, AlertCircle,
   Waves, Zap as ZapIcon, Map, UtensilsCrossed, Ticket,
-  LogOut, Star, Clock, Users
+  LogOut, Star, Clock, Users, X, QrCode, CheckCircle2,
+  Wind, Droplets, TreePine, Tornado, Navigation
 } from "lucide-react";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
@@ -560,47 +561,273 @@ function Dashboard({ user, reservations, onReserve, onLogout, fastPass, setFastP
   );
 }
 
-// ─── ATTRACTIONS TAB (stub — fase 2B) ─────────────────────────────────────────
-function AttractionsTab({ reservations, onReserve, onToast }) {
+// ─── ATTRACTION ICON MAP ──────────────────────────────────────────────────────
+const ATTR_ICON = {
+  megatobogan:   Waves,
+  "bosque-lluvia": TreePine,
+  "piscina-olas":  Droplets,
+  tornado:         Tornado,
+  "rio-lento":     Navigation,
+};
+
+// ─── useCooldown ──────────────────────────────────────────────────────────────
+function useCooldown(reservation) {
+  const [rem, setRem] = useState(0);
+  useEffect(() => {
+    if (!reservation) { setRem(0); return; }
+    const tick = () => setRem(Math.max(0, COOLDOWN_MS - (Date.now() - reservation.ts)));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [reservation]);
+  return rem;
+}
+
+// ─── QR MODAL ─────────────────────────────────────────────────────────────────
+function QRModal({ title, subtitle, code, onClose }) {
+  const seed = code.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  const cells = Array.from({ length: 49 }, (_, i) => {
+    const corners = [0,1,7,8, 5,6,12,13, 35,36,42,43, 40,41,47,48];
+    return corners.includes(i) || ((seed * 31 + i * 17 + i * i) % 13) < 7;
+  });
   return (
-    <div className="px-4 py-4 space-y-3">
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-5 animate-fade-in"
+         onClick={onClose}>
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xs animate-pop-in overflow-hidden"
+           onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="bg-brand-900 px-5 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <QrCode size={18} className="text-gold-400" strokeWidth={2} />
+            <span className="text-white font-bold text-sm">{title}</span>
+          </div>
+          <button onClick={onClose} className="text-white/60 hover:text-white transition-colors">
+            <X size={18} strokeWidth={2} />
+          </button>
+        </div>
+        {/* QR grid */}
+        <div className="px-5 py-5 flex flex-col items-center gap-4">
+          <div className="bg-brand-50 border-2 border-brand-100 rounded-2xl p-4">
+            <div className="inline-grid gap-0.5" style={{ gridTemplateColumns: "repeat(7, 1fr)" }}>
+              {cells.map((on, i) => (
+                <div key={i}
+                  className={`w-5 h-5 rounded-[3px] ${on ? "bg-brand-900" : "bg-white"}`} />
+              ))}
+            </div>
+          </div>
+          <div className="text-center space-y-1">
+            <p className="font-mono text-xs font-bold text-gray-500 tracking-widest">{code}</p>
+            <p className="text-xs text-gray-400">{subtitle}</p>
+          </div>
+          <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5 w-full">
+            <CheckCircle2 size={14} className="text-emerald-500 flex-shrink-0" strokeWidth={2.5} />
+            <p className="text-xs text-emerald-700 font-semibold">Reserva confirmada · Válido hoy</p>
+          </div>
+          <button onClick={onClose}
+            className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-2xl text-sm transition-colors active:scale-[0.98]">
+            Listo
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── DETAIL MODAL ─────────────────────────────────────────────────────────────
+function DetailModal({ attraction: a, reservation, waiting, onReserve, onClose }) {
+  const rem = useCooldown(reservation);
+  const cooling = reservation && rem > 0;
+  const Icon = ATTR_ICON[a.id] || Waves;
+  return (
+    <div className="fixed inset-0 bg-black/50 z-40 flex items-end animate-fade-in"
+         onClick={onClose}>
+      <div className="bg-white w-full rounded-t-3xl shadow-2xl animate-slide-up"
+           onClick={e => e.stopPropagation()}>
+        {/* Handle */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 bg-gray-200 rounded-full" />
+        </div>
+        {/* Icon + title */}
+        <div className="px-5 pt-2 pb-4 flex items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
+               style={{ background: a.bg }}>
+            <Icon size={28} strokeWidth={1.8} style={{ color: a.color }} />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">{a.name}</h2>
+            <p className="text-sm text-gray-500 mt-0.5">Fila virtual · Cupo garantizado</p>
+          </div>
+        </div>
+        {/* Stats row */}
+        <div className="mx-5 grid grid-cols-3 gap-2 mb-4">
+          {[
+            { label: "Duración", value: a.time, sub: "estimado" },
+            { label: "En espera", value: waiting, sub: "personas" },
+            { label: "Estado", value: cooling ? "Frío" : "Libre", sub: cooling ? "cooldown" : "disponible" },
+          ].map(s => (
+            <div key={s.label} className="bg-gray-50 rounded-xl p-2.5 text-center">
+              <p className="text-[10px] text-gray-400 font-semibold">{s.label}</p>
+              <p className="font-bold text-gray-900 text-base leading-tight">{s.value}</p>
+              <p className="text-[9px] text-gray-400">{s.sub}</p>
+            </div>
+          ))}
+        </div>
+        {/* Action */}
+        <div className="px-5 pb-8">
+          {cooling ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-4 text-center">
+              <p className="text-xs text-amber-600 font-semibold mb-1">Tiempo frío activo</p>
+              <p className="font-mono text-2xl font-black text-amber-700">{fmtCountdown(rem)}</p>
+              <p className="text-[10px] text-gray-400 mt-1">
+                Reservaste a las {new Date(reservation.ts).toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit"})}
+              </p>
+            </div>
+          ) : (
+            <button
+              onClick={() => { onReserve(a); onClose(); }}
+              className="w-full bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-bold py-4 rounded-2xl text-base transition-all shadow-lg shadow-brand-200">
+              Reservar Fila Virtual
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ATTRACTION CARD ──────────────────────────────────────────────────────────
+function AttractionCard({ attraction: a, reservation, waiting, onReserve, onDetail }) {
+  const rem = useCooldown(reservation);
+  const cooling = reservation && rem > 0;
+  const pct = reservation ? Math.min(100, ((Date.now() - reservation.ts) / COOLDOWN_MS) * 100) : 0;
+  const Icon = ATTR_ICON[a.id] || Waves;
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* Color accent bar */}
+      <div className="h-1 w-full" style={{ background: a.color }} />
+      <div className="p-4 flex items-center gap-3">
+        {/* Icon */}
+        <button
+          onClick={() => onDetail(a)}
+          className="w-13 h-13 w-[52px] h-[52px] rounded-xl flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform"
+          style={{ background: a.bg }}>
+          <Icon size={24} strokeWidth={1.8} style={{ color: a.color }} />
+        </button>
+        {/* Info */}
+        <div className="flex-1 min-w-0" onClick={() => onDetail(a)}>
+          <p className="font-bold text-gray-900 text-sm leading-tight">{a.name}</p>
+          <div className="flex items-center gap-3 mt-1">
+            <span className="flex items-center gap-1 text-[11px] text-gray-400">
+              <Clock size={10} strokeWidth={2} /> {a.time}
+            </span>
+            <span className="flex items-center gap-1 text-[11px] text-gray-400">
+              <Users size={10} strokeWidth={2} /> {waiting} esperando
+            </span>
+          </div>
+          {/* Cooldown progress bar */}
+          {cooling && (
+            <div className="mt-1.5 h-1 bg-gray-100 rounded-full overflow-hidden w-full">
+              <div className="h-full bg-amber-400 rounded-full transition-all"
+                   style={{ width: `${pct}%` }} />
+            </div>
+          )}
+        </div>
+        {/* Action */}
+        <div className="flex-shrink-0">
+          {cooling ? (
+            <div className="text-center min-w-[72px]">
+              <p className="text-[9px] font-bold text-amber-500 mb-0.5">COOLDOWN</p>
+              <p className="font-mono text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5">
+                {fmtCountdown(rem)}
+              </p>
+            </div>
+          ) : (
+            <button
+              onClick={() => onReserve(a)}
+              className="bg-brand-600 hover:bg-brand-700 active:scale-95 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl shadow-sm shadow-brand-200 transition-all">
+              Reservar
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ATTRACTIONS TAB ──────────────────────────────────────────────────────────
+function AttractionsTab({ reservations, onReserve, onToast }) {
+  const [detail, setDetail] = useState(null);
+  const [qr, setQr]         = useState(null);
+  const [waitCounts]        = useState(() =>
+    Object.fromEntries(ATTRACTIONS.map(a => [a.id, Math.floor(Math.random() * (a.waitMax - a.waitMin + 1)) + a.waitMin]))
+  );
+
+  const handleReserve = useCallback((attr) => {
+    const ok = onReserve(attr);
+    if (ok) {
+      const code = `VQ-${attr.id.slice(0,3).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
+      setQr({ title: `Fila: ${attr.name}`, subtitle: "Preséntalo en la entrada de la atracción", code });
+      onToast(`¡Turno reservado en ${attr.name}!`, "success");
+    }
+  }, [onReserve, onToast]);
+
+  const coolingCount = ATTRACTIONS.filter(a => {
+    const res = [...reservations].filter(r => r.attractionId === a.id).sort((x,y) => y.ts - x.ts)[0];
+    return res && (COOLDOWN_MS - (Date.now() - res.ts)) > 0;
+  }).length;
+
+  return (
+    <div className="px-4 py-4 space-y-3 pb-6">
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          { label: "Reservas",     value: reservations.length, color: "text-brand-600" },
+          { label: "Disponibles",  value: ATTRACTIONS.length - coolingCount, color: "text-emerald-600" },
+          { label: "En cooldown",  value: coolingCount, color: "text-amber-500" },
+        ].map(s => (
+          <div key={s.label} className="bg-white rounded-xl p-2.5 text-center shadow-sm border border-gray-100">
+            <p className={`text-xl font-black ${s.color}`}>{s.value}</p>
+            <p className="text-gray-400 text-[9px] font-semibold leading-tight mt-0.5">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
       {/* Info banner */}
       <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2.5">
-        <Clock size={14} className="text-amber-500 flex-shrink-0" strokeWidth={2} />
+        <Clock size={13} className="text-amber-500 flex-shrink-0" strokeWidth={2.5} />
         <p className="text-xs text-amber-700 font-medium">
           <span className="font-bold">Cooldown de 2h</span> entre reservas por atracción
         </p>
       </div>
 
-      {/* Attraction skeletons / coming */}
-      <p className="text-[11px] font-bold text-gray-400 tracking-widest uppercase px-1">
+      <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase px-0.5">
         Atracciones disponibles
       </p>
-      {ATTRACTIONS.map(a => (
-        <div key={a.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="h-1" style={{ background: a.color }} />
-          <div className="p-4 flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                 style={{ background: a.bg }}>
-              <Waves size={22} strokeWidth={1.8} style={{ color: a.color }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-gray-900 text-sm">{a.name}</p>
-              <div className="flex items-center gap-3 mt-0.5">
-                <span className="flex items-center gap-1 text-[11px] text-gray-400">
-                  <Clock size={10} strokeWidth={2} /> {a.time}
-                </span>
-                <span className="flex items-center gap-1 text-[11px] text-gray-400">
-                  <Users size={10} strokeWidth={2} /> {a.waitMin}–{a.waitMax} en espera
-                </span>
-              </div>
-            </div>
-            <div className="bg-gray-100 text-gray-400 text-[10px] font-bold px-3 py-1.5 rounded-lg">
-              Fase 2B
-            </div>
-          </div>
-        </div>
-      ))}
+
+      {ATTRACTIONS.map(a => {
+        const res = [...reservations].filter(r => r.attractionId === a.id).sort((x,y) => y.ts - x.ts)[0];
+        return (
+          <AttractionCard
+            key={a.id}
+            attraction={a}
+            reservation={res}
+            waiting={waitCounts[a.id]}
+            onReserve={handleReserve}
+            onDetail={setDetail}
+          />
+        );
+      })}
+
+      {detail && (
+        <DetailModal
+          attraction={detail}
+          reservation={[...reservations].filter(r => r.attractionId === detail.id).sort((x,y) => y.ts - x.ts)[0]}
+          waiting={waitCounts[detail.id]}
+          onReserve={handleReserve}
+          onClose={() => setDetail(null)}
+        />
+      )}
+      {qr && <QRModal {...qr} onClose={() => setQr(null)} />}
     </div>
   );
 }
