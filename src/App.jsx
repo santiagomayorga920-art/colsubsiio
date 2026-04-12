@@ -903,6 +903,177 @@ function FastPassTab({ user, fastPass, setFastPass, onToast }) {
   return null;
 }
 
+// ─── MAP DATA ─────────────────────────────────────────────────────────────────
+const MAP_PINS = [
+  { id:"entrada",    label:"Entrada / Taquilla",    type:"entrance", x:12, y:78, color:"#f59e0b", iconColor:"#78350f" },
+  { id:"megatob",   label:"Megatobogán",            type:"attraction",x:22, y:28, color:"#f97316", iconColor:"#fff" },
+  { id:"bosque",    label:"Bosque de la Lluvia",    type:"attraction",x:62, y:20, color:"#16a34a", iconColor:"#fff" },
+  { id:"piscola",   label:"Piscina de Olas",        type:"attraction",x:72, y:54, color:"#0284c7", iconColor:"#fff" },
+  { id:"tornado",   label:"El Tornado",             type:"attraction",x:40, y:58, color:"#7c3aed", iconColor:"#fff" },
+  { id:"riolento",  label:"Río Lento",              type:"attraction",x:18, y:62, color:"#0891b2", iconColor:"#fff" },
+  { id:"cascada",   label:"La Cascada",             type:"food",      x:50, y:38, color:"#ea580c", iconColor:"#fff" },
+  { id:"rancho",    label:"El Rancho",              type:"food",      x:32, y:72, color:"#b45309", iconColor:"#fff" },
+  { id:"pizza",     label:"PizzaLago",              type:"food",      x:80, y:32, color:"#dc2626", iconColor:"#fff" },
+  { id:"baño1",     label:"Servicios / Baños",      type:"restroom",  x:55, y:65, color:"#6b7280", iconColor:"#fff" },
+  { id:"ayuda",     label:"Punto de Ayuda",         type:"help",      x:30, y:44, color:"#2563eb", iconColor:"#fff" },
+];
+
+const PIN_ICONS = {
+  entrance:   "🚪",
+  attraction: "🎢",
+  food:       "🍽",
+  restroom:   "🚻",
+  help:       "ℹ",
+};
+
+const PIN_LABEL_COLOR = {
+  entrance:   "bg-amber-100 text-amber-800 border-amber-300",
+  attraction: "bg-blue-50 text-brand-700 border-brand-200",
+  food:       "bg-orange-50 text-orange-700 border-orange-200",
+  restroom:   "bg-gray-100 text-gray-600 border-gray-300",
+  help:       "bg-blue-50 text-blue-700 border-blue-200",
+};
+
+// ─── MAP TAB ──────────────────────────────────────────────────────────────────
+function MapTab() {
+  const [selected, setSelected] = useState(null);
+  const [filter, setFilter]     = useState("all");
+
+  const FILTERS = [
+    { id:"all",        label:"Todo" },
+    { id:"attraction", label:"Atracciones" },
+    { id:"food",       label:"Comida" },
+    { id:"restroom",   label:"Servicios" },
+    { id:"help",       label:"Ayuda" },
+  ];
+
+  const visible = MAP_PINS.filter(p => filter === "all" || p.type === filter || p.type === "entrance");
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Filter chips */}
+      <div className="px-4 pt-3 pb-2 flex gap-2 overflow-x-auto flex-shrink-0 no-scrollbar">
+        {FILTERS.map(f => (
+          <button key={f.id} onClick={() => setFilter(f.id)}
+            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold border transition-all
+              ${filter === f.id
+                ? "bg-brand-600 text-white border-brand-600"
+                : "bg-white text-gray-500 border-gray-200 hover:border-brand-300"}`}>
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Map container */}
+      <div className="flex-1 mx-4 mb-2 relative overflow-hidden rounded-2xl border-2 border-brand-100 shadow-inner"
+           style={{ minHeight: 260 }}>
+        {/* SVG illustrated map */}
+        <svg viewBox="0 0 100 100" className="w-full h-full" xmlns="http://www.w3.org/2000/svg"
+             preserveAspectRatio="xMidYMid slice">
+          {/* Sky / water border */}
+          <rect width="100" height="100" fill="#bae6fd" />
+
+          {/* Main island shape */}
+          <ellipse cx="50" cy="50" rx="44" ry="42" fill="#bbf7d0" />
+
+          {/* Interior grass zones */}
+          <ellipse cx="48" cy="46" rx="36" ry="32" fill="#86efac" />
+
+          {/* Central lake / piscina de olas */}
+          <ellipse cx="68" cy="54" rx="16" ry="12" fill="#7dd3fc" opacity="0.85" />
+          <ellipse cx="68" cy="54" rx="13" ry="9"  fill="#38bdf8" opacity="0.6" />
+
+          {/* Río Lento — winding river */}
+          <path d="M10 65 Q20 58 18 62 Q16 68 22 68 Q28 68 26 72 Q22 78 30 80"
+                fill="none" stroke="#7dd3fc" strokeWidth="3" strokeLinecap="round" opacity="0.8" />
+
+          {/* Dense tree clusters */}
+          <circle cx="60" cy="20" r="9"  fill="#4ade80" opacity="0.7" />
+          <circle cx="65" cy="18" r="7"  fill="#22c55e" opacity="0.6" />
+          <circle cx="55" cy="22" r="6"  fill="#4ade80" opacity="0.5" />
+          <circle cx="22" cy="28" r="5"  fill="#4ade80" opacity="0.5" />
+          <circle cx="78" cy="34" r="6"  fill="#4ade80" opacity="0.5" />
+          <circle cx="82" cy="30" r="4"  fill="#22c55e" opacity="0.4" />
+
+          {/* Paths / roads */}
+          <path d="M12 78 Q22 70 30 65 Q42 58 50 50 Q60 40 62 28"
+                fill="none" stroke="#fef9c3" strokeWidth="2.5" strokeDasharray="3,2" opacity="0.9" />
+          <path d="M50 50 Q65 50 72 54"
+                fill="none" stroke="#fef9c3" strokeWidth="2" strokeDasharray="3,2" opacity="0.8" />
+          <path d="M50 50 Q42 56 40 58"
+                fill="none" stroke="#fef9c3" strokeWidth="2" strokeDasharray="3,2" opacity="0.8" />
+          <path d="M30 65 Q22 64 18 62"
+                fill="none" stroke="#fef9c3" strokeWidth="2" strokeDasharray="3,2" opacity="0.7" />
+
+          {/* Entrance road */}
+          <rect x="8" y="74" width="8" height="3" rx="1" fill="#fde68a" opacity="0.9" />
+          <text x="50" y="97" textAnchor="middle" fontSize="3.5" fill="#0ea5e9" fontWeight="bold" opacity="0.7">
+            LAGO TOMINÉ
+          </text>
+        </svg>
+
+        {/* Pins overlay */}
+        {visible.map(pin => (
+          <button key={pin.id}
+            onClick={() => setSelected(selected?.id === pin.id ? null : pin)}
+            style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
+            className="absolute -translate-x-1/2 -translate-y-full transition-transform active:scale-90">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg border-2 border-white text-sm
+              ${selected?.id === pin.id ? "scale-125 ring-2 ring-white ring-offset-1" : ""}`}
+                 style={{ background: pin.color }}>
+              <span style={{ color: pin.iconColor, fontSize: 14 }}>{PIN_ICONS[pin.type]}</span>
+            </div>
+            <div className="w-0 h-0 border-l-[5px] border-r-[5px] border-t-[6px] border-transparent mx-auto"
+                 style={{ borderTopColor: pin.color }} />
+          </button>
+        ))}
+
+        {/* Tooltip */}
+        {selected && (
+          <div className="absolute bottom-3 left-3 right-3 bg-white rounded-xl shadow-xl border border-gray-100 px-3 py-2.5 flex items-center gap-2 animate-fade-in">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-base"
+                 style={{ background: selected.color }}>
+              <span style={{ color: selected.iconColor }}>{PIN_ICONS[selected.type]}</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-gray-900 text-xs truncate">{selected.label}</p>
+              <p className="text-[10px] text-gray-400 capitalize">{selected.type === "attraction" ? "Atracción" : selected.type === "food" ? "Comida" : selected.type === "restroom" ? "Servicios" : selected.type === "entrance" ? "Entrada" : "Ayuda"}</p>
+            </div>
+            <button onClick={() => setSelected(null)}
+              className="text-gray-400 hover:text-gray-600 flex-shrink-0">
+              <X size={14} strokeWidth={2} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Legend */}
+      <div className="px-4 pb-4 flex-shrink-0">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3">
+          <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-2">Leyenda</p>
+          <div className="grid grid-cols-2 gap-1.5">
+            {[
+              { type:"entrance",   label:"Entrada / Salida", color:"#f59e0b" },
+              { type:"attraction", label:"Atracciones",      color:"#f97316" },
+              { type:"food",       label:"Comida",           color:"#ea580c" },
+              { type:"restroom",   label:"Baños / Servicios",color:"#6b7280" },
+              { type:"help",       label:"Punto de ayuda",   color:"#2563eb" },
+            ].map(l => (
+              <div key={l.type} className="flex items-center gap-1.5">
+                <div className="w-4 h-4 rounded-full flex-shrink-0 flex items-center justify-center text-white text-[9px]"
+                     style={{ background: l.color }}>
+                  {PIN_ICONS[l.type]}
+                </div>
+                <span className="text-[10px] text-gray-600 font-medium">{l.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
 function Dashboard({ user, reservations, onReserve, onLogout, fastPass, setFastPass, onToast, showFPPopup, onDismissPopup }) {
   const [activeTab, setActiveTab] = useState("atracciones");
@@ -916,7 +1087,7 @@ function Dashboard({ user, reservations, onReserve, onLogout, fastPass, setFastP
           {activeTab === "atracciones" && (
             <AttractionsTab reservations={reservations} onReserve={onReserve} onToast={onToast} />
           )}
-          {activeTab === "mapa"     && <TabPlaceholder icon={Map}             label="Mapa" />}
+          {activeTab === "mapa"     && <MapTab />}
           {activeTab === "comida"   && <TabPlaceholder icon={UtensilsCrossed} label="Comida" />}
           {activeTab === "fastpass" && (
             <FastPassTab user={user} fastPass={fastPass} setFastPass={setFastPass} onToast={onToast} />
