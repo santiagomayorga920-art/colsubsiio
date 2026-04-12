@@ -221,32 +221,81 @@ function Field({ label, placeholder, value, onChange, error, icon: Icon, type = 
   );
 }
 
+// ─── TYPOGRAPHIC WORDMARK (Login / Verify header) ────────────────────────────
+function LoginWordmark() {
+  return (
+    <div className="select-none flex flex-col items-center">
+      <p className="text-brand-300 text-[10px] font-semibold tracking-[0.25em] uppercase leading-none mb-1">
+        PARQUE ACUÁTICO Y
+      </p>
+      <h1 className="text-white font-black text-[48px] leading-none tracking-tight">
+        PISCILAGO
+      </h1>
+      <p className="text-brand-200 text-[13px] font-medium tracking-widest mt-1 opacity-80">
+        Colsubsidio
+      </p>
+    </div>
+  );
+}
+
+// ─── DOC TYPE CONFIG ──────────────────────────────────────────────────────────
+const DOC_TYPES = [
+  { value: "CC",        label: "CC – Cédula de Ciudadanía" },
+  { value: "TI",        label: "TI – Tarjeta de Identidad" },
+  { value: "CE",        label: "CE – Cédula de Extranjería" },
+  { value: "Pasaporte", label: "Pasaporte" },
+];
+const DOC_RULES = {
+  CC:        { pattern: /^\d{6,10}$/, msg: "CC: 6–10 dígitos" },
+  TI:        { pattern: /^\d{10,11}$/, msg: "TI: 10–11 dígitos" },
+  CE:        { pattern: /^\d{6,7}$/, msg: "CE: 6–7 dígitos" },
+  Pasaporte: { pattern: /^[A-Za-z0-9]{8,9}$/, msg: "Pasaporte: 8–9 caracteres alfanuméricos" },
+};
+
 // ─── LOGIN SCREEN ─────────────────────────────────────────────────────────────
 function LoginScreen({ onSubmit }) {
   const [tab, setTab]     = useState("register");
-  const [form, setForm]   = useState({ name: "", doc: "", email: "", phone: "", dob: "", password: "" });
+  const [form, setForm]   = useState({ name: "", docType: "CC", doc: "", email: "", phone: "", dob: "", password: "" });
   const [errors, setErrors] = useState({});
   const f = (k) => (v) => setForm(p => ({ ...p, [k]: v }));
 
   const validate = () => {
     const e = {};
     if (tab === "register") {
+      // Name: at least 2 words
       if (form.name.trim().split(/\s+/).filter(Boolean).length < 2)
         e.name = "Ingresa nombre y apellido (mínimo 2 palabras)";
-      const doc = form.doc.replace(/\D/g, "");
-      if (doc.length < 8 || doc.length > 10)
-        e.doc = "La cédula debe tener entre 8 y 10 dígitos";
-      if (!form.phone.trim())
-        e.phone = "Teléfono requerido";
+
+      // Document: per-type rules
+      const docVal = form.doc.trim();
+      const rule = DOC_RULES[form.docType];
+      if (!docVal) {
+        e.doc = "Número de documento requerido";
+      } else if (!rule.pattern.test(docVal)) {
+        e.doc = rule.msg;
+      }
+
+      // Phone: exactly 10 digits, starts with 3
+      const phone = form.phone.replace(/\s/g, "");
+      if (!/^\d{10}$/.test(phone))
+        e.phone = "Ingresa 10 dígitos (ej. 3001234567)";
+      else if (!phone.startsWith("3"))
+        e.phone = "El número debe comenzar con 3";
+
+      // Date of birth
       if (!form.dob)
         e.dob = "Fecha de nacimiento requerida";
       else if (calcAge(form.dob) < 6)
         e.dob = "El visitante debe tener al menos 6 años";
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+
+    // Email: strict regex
+    if (!/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(form.email))
       e.email = "Correo electrónico inválido";
+
     if (tab === "login" && !form.password)
       e.password = "Contraseña requerida";
+
     return e;
   };
 
@@ -266,10 +315,7 @@ function LoginScreen({ onSubmit }) {
         <div className="absolute -bottom-16 -left-10 w-40 h-40 rounded-full bg-brand-800 opacity-50" />
         <div className="absolute top-8 left-1/2 -translate-x-1/2 w-24 h-24 rounded-full bg-brand-700 opacity-20" />
         <div className="relative z-10 px-6">
-          <PiscilagoLogo size="lg" />
-          <p className="text-center text-brand-300 text-xs font-medium mt-3 tracking-widest uppercase">
-            Tu aventura acuática
-          </p>
+          <LoginWordmark />
         </div>
       </div>
 
@@ -294,11 +340,44 @@ function LoginScreen({ onSubmit }) {
             <>
               <Field label="Nombre completo" placeholder="Juan Pérez García" value={form.name}
                 onChange={f("name")} error={errors.name} icon={User} />
-              <Field label="Cédula de ciudadanía" placeholder="1234567890" value={form.doc}
-                onChange={f("doc")} error={errors.doc} icon={CreditCard}
-                type="tel" extra={{ inputMode: "numeric" }} />
-              <Field label="Teléfono celular" placeholder="300 123 4567" value={form.phone}
-                onChange={f("phone")} error={errors.phone} icon={Phone} type="tel" />
+
+              {/* Document type selector + number */}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-500 tracking-wide">Tipo de documento</label>
+                <div className="flex items-center gap-2.5 border rounded-xl px-3.5 py-3 border-gray-200 bg-gray-50 focus-within:border-brand-400 focus-within:bg-white focus-within:ring-1 focus-within:ring-brand-100 transition-all">
+                  <CreditCard size={15} className="text-gray-400 flex-shrink-0" strokeWidth={2} />
+                  <select
+                    value={form.docType}
+                    onChange={e => setForm(p => ({ ...p, docType: e.target.value, doc: "" }))}
+                    className="flex-1 bg-transparent text-sm text-gray-800 outline-none font-medium appearance-none"
+                  >
+                    {DOC_TYPES.map(dt => (
+                      <option key={dt.value} value={dt.value}>{dt.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <Field
+                label="Número de documento"
+                placeholder={
+                  form.docType === "CC"        ? "6–10 dígitos" :
+                  form.docType === "TI"        ? "10–11 dígitos" :
+                  form.docType === "CE"        ? "6–7 dígitos" :
+                  "8–9 caracteres"
+                }
+                value={form.doc}
+                onChange={v => setForm(p => ({ ...p, doc: form.docType === "Pasaporte" ? v : v.replace(/\D/g, "") }))}
+                error={errors.doc}
+                icon={CreditCard}
+                type={form.docType === "Pasaporte" ? "text" : "tel"}
+                extra={form.docType !== "Pasaporte" ? { inputMode: "numeric" } : {}}
+              />
+
+              <Field label="Teléfono celular" placeholder="3001234567" value={form.phone}
+                onChange={v => setForm(p => ({ ...p, phone: v.replace(/\D/g, "") }))}
+                error={errors.phone} icon={Phone} type="tel"
+                extra={{ inputMode: "numeric", maxLength: 10 }} />
+
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-gray-500 tracking-wide">Fecha de nacimiento</label>
                 <div className={`flex items-center gap-2.5 border rounded-xl px-3.5 py-3 transition-all
@@ -389,7 +468,7 @@ function VerifyScreen({ pending, onVerified }) {
         <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-brand-700 opacity-40" />
         <div className="absolute -bottom-16 -left-10 w-40 h-40 rounded-full bg-brand-800 opacity-50" />
         <div className="relative z-10 px-6">
-          <PiscilagoLogo size="lg" />
+          <LoginWordmark />
         </div>
       </div>
 
