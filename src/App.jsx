@@ -1,8 +1,9 @@
 import { useState, useRef } from "react";
 import {
   User, Lock, Mail, Phone, CreditCard, Calendar,
-  Eye, EyeOff, ChevronRight, Zap, ShieldCheck,
-  RefreshCw, AlertCircle, Waves
+  Eye, EyeOff, Zap, ShieldCheck, RefreshCw, AlertCircle,
+  Waves, Zap as ZapIcon, Map, UtensilsCrossed, Ticket,
+  LogOut, Star, Clock, Users
 } from "lucide-react";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
@@ -426,61 +427,180 @@ function VerifyScreen({ pending, onVerified }) {
   );
 }
 
-// ─── PHASE 2 PLACEHOLDER DASHBOARD ────────────────────────────────────────────
-function DashboardPlaceholder({ user, onLogout }) {
+// ─── TAB PLACEHOLDER ──────────────────────────────────────────────────────────
+function TabPlaceholder({ icon: Icon, label }) {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 text-center">
+      <div className="w-16 h-16 rounded-2xl bg-brand-50 flex items-center justify-center">
+        <Icon size={28} className="text-brand-400" strokeWidth={1.5} />
+      </div>
+      <p className="text-sm font-semibold text-gray-500">
+        <span className="text-brand-600 font-bold">{label}</span> en desarrollo
+      </p>
+      <p className="text-xs text-gray-400">Disponible en la próxima fase</p>
+    </div>
+  );
+}
+
+// ─── BOTTOM TAB BAR ───────────────────────────────────────────────────────────
+const TABS = [
+  { id: "atracciones", label: "Atracciones", Icon: Ticket },
+  { id: "mapa",        label: "Mapa",         Icon: Map },
+  { id: "comida",      label: "Comida",        Icon: UtensilsCrossed },
+  { id: "fastpass",    label: "Fast Pass",     Icon: ZapIcon },
+];
+
+function BottomNav({ active, onSelect }) {
+  return (
+    <div className="bg-white border-t border-gray-100 flex-shrink-0"
+         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+      <div className="flex justify-around px-1 py-1.5">
+        {TABS.map(({ id, label, Icon }) => {
+          const isActive = active === id;
+          return (
+            <button
+              key={id}
+              onClick={() => onSelect(id)}
+              className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all
+                ${isActive ? "bg-brand-50" : "hover:bg-gray-50"}`}
+            >
+              <Icon
+                size={20}
+                strokeWidth={isActive ? 2.5 : 1.8}
+                className={isActive ? "text-brand-600" : "text-gray-400"}
+              />
+              <span className={`text-[9px] font-bold tracking-wide
+                ${isActive ? "text-brand-600" : "text-gray-400"}`}>
+                {label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── DASHBOARD HEADER ─────────────────────────────────────────────────────────
+function DashboardHeader({ user, fastPassActive, onLogout }) {
+  const firstName = user.name.split(" ")[0];
+  const initial   = firstName.charAt(0).toUpperCase();
+  const hour      = new Date().getHours();
+  const greeting  = hour < 12 ? "Buenos días" : hour < 18 ? "Buenas tardes" : "Buenas noches";
+  return (
+    <div className="bg-brand-900 px-4 pt-7 pb-4 flex-shrink-0 relative overflow-hidden">
+      {/* Decorative blobs */}
+      <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-brand-700 opacity-30 pointer-events-none" />
+      <div className="absolute top-2 right-24 w-16 h-16 rounded-full bg-gold-400 opacity-10 pointer-events-none" />
+
+      {/* Top row: logo + logout */}
+      <div className="relative flex items-center justify-between mb-3">
+        <PiscilagoLogo size="sm" />
+        <button
+          onClick={onLogout}
+          className="flex items-center gap-1.5 text-brand-300 hover:text-white text-xs font-semibold transition-colors"
+        >
+          <LogOut size={13} strokeWidth={2} /> Salir
+        </button>
+      </div>
+
+      {/* User card */}
+      <div className="relative bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 flex items-center gap-3">
+        {/* Avatar */}
+        <div className="w-11 h-11 rounded-full bg-gold-400 flex items-center justify-center
+                        font-black text-brand-900 text-lg flex-shrink-0 shadow-md">
+          {initial}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-white/60 text-[11px] font-medium">{greeting}</p>
+          <p className="text-white font-bold text-base truncate leading-tight">{user.name}</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <div className="flex items-center gap-1">
+              <Star size={10} className="text-gold-400" fill="#F59E0B" />
+              <span className="text-gold-300 text-[10px] font-semibold">150 pts</span>
+            </div>
+            <span className="text-white/20 text-[10px]">•</span>
+            <div className="flex items-center gap-1">
+              <Clock size={10} className="text-white/50" />
+              <span className="text-white/50 text-[10px]">Franja 10:00–12:00</span>
+            </div>
+          </div>
+        </div>
+        {fastPassActive && (
+          <div className="bg-gold-400 text-brand-900 text-[9px] font-black px-2 py-1
+                          rounded-full tracking-wide flex-shrink-0">
+            ⚡ FP
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────────────
+function Dashboard({ user, reservations, onReserve, onLogout, fastPass, setFastPass, onToast }) {
+  const [activeTab, setActiveTab] = useState("atracciones");
+
   return (
     <div className="flex flex-col h-full bg-gray-50">
-      {/* Header */}
-      <div className="bg-brand-900 px-4 pt-8 pb-4">
-        <div className="flex items-center justify-between mb-4">
-          <PiscilagoLogo size="sm" />
-          <button onClick={onLogout} className="text-xs text-brand-300 font-semibold">
-            Salir
-          </button>
+      <DashboardHeader user={user} fastPassActive={fastPass?.confirmed} onLogout={onLogout} />
+
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+        <div className="flex-1 overflow-y-auto">
+          {activeTab === "atracciones" && (
+            <AttractionsTab reservations={reservations} onReserve={onReserve} onToast={onToast} />
+          )}
+          {activeTab === "mapa"     && <TabPlaceholder icon={Map}             label="Mapa" />}
+          {activeTab === "comida"   && <TabPlaceholder icon={UtensilsCrossed} label="Comida" />}
+          {activeTab === "fastpass" && <TabPlaceholder icon={ZapIcon}         label="Fast Pass" />}
         </div>
-        <div className="bg-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gold-400 flex items-center justify-center font-black text-brand-900 text-lg">
-            {user.name.charAt(0).toUpperCase()}
-          </div>
-          <div>
-            <p className="text-white/60 text-xs">Bienvenido</p>
-            <p className="text-white font-bold text-sm">{user.name}</p>
-          </div>
-        </div>
+        <BottomNav active={activeTab} onSelect={setActiveTab} />
+      </div>
+    </div>
+  );
+}
+
+// ─── ATTRACTIONS TAB (stub — fase 2B) ─────────────────────────────────────────
+function AttractionsTab({ reservations, onReserve, onToast }) {
+  return (
+    <div className="px-4 py-4 space-y-3">
+      {/* Info banner */}
+      <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2.5">
+        <Clock size={14} className="text-amber-500 flex-shrink-0" strokeWidth={2} />
+        <p className="text-xs text-amber-700 font-medium">
+          <span className="font-bold">Cooldown de 2h</span> entre reservas por atracción
+        </p>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-4">
-        <div className="w-20 h-20 rounded-3xl bg-brand-50 flex items-center justify-center">
-          <Waves size={36} className="text-brand-500" strokeWidth={1.5} />
-        </div>
-        <div>
-          <h2 className="text-lg font-bold text-gray-900">¡Registro exitoso! 🎉</h2>
-          <p className="text-gray-500 text-sm mt-1">
-            <span className="font-semibold text-brand-600">Fase 2</span> en construcción —{" "}
-            Atracciones, Mapa, Comida y Fast Pass llegan pronto.
-          </p>
-        </div>
-        <div className="w-full space-y-2 mt-2">
-          {["🎢 Atracciones", "🗺️ Mapa del Parque", "🍔 Comida", "⚡ Fast Pass"].map(item => (
-            <div key={item} className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm">
-              <span className="text-base">{item.split(" ")[0]}</span>
-              <span className="text-sm font-semibold text-gray-700">{item.split(" ").slice(1).join(" ")}</span>
-              <span className="ml-auto text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">Próximamente</span>
+      {/* Attraction skeletons / coming */}
+      <p className="text-[11px] font-bold text-gray-400 tracking-widest uppercase px-1">
+        Atracciones disponibles
+      </p>
+      {ATTRACTIONS.map(a => (
+        <div key={a.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="h-1" style={{ background: a.color }} />
+          <div className="p-4 flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                 style={{ background: a.bg }}>
+              <Waves size={22} strokeWidth={1.8} style={{ color: a.color }} />
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Bottom nav placeholder */}
-      <div className="bg-white border-t border-gray-100 px-2 py-2 flex justify-around flex-shrink-0">
-        {[["🎢","Atracciones"],["🗺️","Mapa"],["🍔","Comida"],["⚡","Fast Pass"]].map(([ic, lb]) => (
-          <div key={lb} className="flex flex-col items-center gap-0.5 px-3 py-1.5 text-gray-300">
-            <span className="text-xl grayscale opacity-40">{ic}</span>
-            <span className="text-[9px] font-semibold">{lb}</span>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-gray-900 text-sm">{a.name}</p>
+              <div className="flex items-center gap-3 mt-0.5">
+                <span className="flex items-center gap-1 text-[11px] text-gray-400">
+                  <Clock size={10} strokeWidth={2} /> {a.time}
+                </span>
+                <span className="flex items-center gap-1 text-[11px] text-gray-400">
+                  <Users size={10} strokeWidth={2} /> {a.waitMin}–{a.waitMax} en espera
+                </span>
+              </div>
+            </div>
+            <div className="bg-gray-100 text-gray-400 text-[10px] font-bold px-3 py-1.5 rounded-lg">
+              Fase 2B
+            </div>
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -499,6 +619,9 @@ export default function App() {
     setScreen("verify");
   };
 
+  const [reservations, setReservations] = useState([]);
+  const [fastPass, setFastPass]         = useState(null);
+
   const handleVerified = (userData) => {
     setUser(userData);
     setScreen("dashboard");
@@ -506,9 +629,19 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    setUser(null);
-    setPendingUser(null);
+    setUser(null); setPendingUser(null);
+    setReservations([]); setFastPass(null);
     setScreen("login");
+  };
+
+  const handleReserve = (attr) => {
+    const now = Date.now();
+    const last = [...reservations]
+      .filter(r => r.attractionId === attr.id)
+      .sort((a, b) => b.ts - a.ts)[0];
+    if (last && (COOLDOWN_MS - (now - last.ts)) > 0) return false;
+    setReservations(prev => [...prev, { attractionId: attr.id, ts: now }]);
+    return true;
   };
 
   return (
@@ -532,7 +665,17 @@ export default function App() {
         <div style={{ height: "calc(100% - 28px)" }} className="overflow-hidden">
           {screen === "login"     && <LoginScreen onSubmit={handleFormSubmit} />}
           {screen === "verify"    && <VerifyScreen pending={pendingUser} onVerified={handleVerified} />}
-          {screen === "dashboard" && <DashboardPlaceholder user={user} onLogout={handleLogout} />}
+          {screen === "dashboard" && (
+            <Dashboard
+              user={user}
+              reservations={reservations}
+              onReserve={handleReserve}
+              onLogout={handleLogout}
+              fastPass={fastPass}
+              setFastPass={setFastPass}
+              onToast={showToast}
+            />
+          )}
         </div>
       </div>
 
@@ -543,7 +686,6 @@ export default function App() {
   );
 }
 
-// Re-export data/helpers for future phases
 export { ATTRACTIONS, RESTAURANTS, FP_MATRIX, FAST_PASS_PRICES, COOLDOWN_MS, VERIFY_CODE,
          fmtCountdown, fmtCOP, calcAge, getFPCategory, getTimeSlot, randWait, genCode,
          PiscilagoLogo, SimQR, Toast, Field };
