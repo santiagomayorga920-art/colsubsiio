@@ -5,7 +5,8 @@ import {
   Waves, Zap as ZapIcon, Map, UtensilsCrossed, Ticket,
   LogOut, Star, Clock, Users, X, QrCode, CheckCircle2,
   Wind, Droplets, TreePine, Tornado, Navigation,
-  BadgeCheck, CreditCard as CardIcon, ChevronRight, Lock as LockIcon
+  BadgeCheck, CreditCard as CardIcon, ChevronRight, Lock as LockIcon,
+  MessageCircle, Send
 } from "lucide-react";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
@@ -1203,6 +1204,119 @@ function FoodTab({ onToast }) {
   );
 }
 
+// ─── HELP BOT ─────────────────────────────────────────────────────────────────
+const BOT_CHIPS = [
+  {
+    label: "Horarios",
+    reply: "El parque abre de Lunes a Viernes 9am–5pm y fines de semana 8am–6pm. El Fast Pass está disponible de 10am a 4pm en franjas de 2 horas.",
+  },
+  {
+    label: "Info Fast Pass",
+    reply: "El Fast Pass te da acceso prioritario según tu categoría (A, B o C) y la franja horaria activa. Afiliados Colsubsidio desde $35.000. No afiliados $120.000.",
+  },
+  {
+    label: "Uso de QR",
+    reply: "Muestra el código QR al operario en la entrada de cada atracción. Para Fast Pass, dirígete a la fila prioritaria. Los códigos son válidos solo el día de emisión.",
+  },
+];
+
+function HelpBot() {
+  const [open, setOpen]       = useState(false);
+  const [msgs, setMsgs]       = useState([
+    { from: "bot", text: "¡Hola! 👋 Soy el asistente de Piscilago. ¿En qué puedo ayudarte hoy?" },
+  ]);
+  const bottomRef = useRef(null);
+
+  useEffect(() => {
+    if (open) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [msgs, open]);
+
+  const handleChip = (chip) => {
+    setMsgs(p => [
+      ...p,
+      { from: "user", text: chip.label },
+      { from: "bot",  text: chip.reply },
+    ]);
+  };
+
+  return (
+    <>
+      {/* FAB */}
+      <button
+        onClick={() => setOpen(true)}
+        className="absolute bottom-20 right-4 z-30 w-13 h-13 w-[52px] h-[52px] rounded-full bg-brand-600 hover:bg-brand-700 shadow-xl shadow-brand-300 flex items-center justify-center transition-all active:scale-95 hover:scale-105"
+      >
+        <MessageCircle size={22} className="text-white" strokeWidth={2} />
+      </button>
+
+      {/* Chat modal */}
+      {open && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end animate-fade-in"
+             onClick={() => setOpen(false)}>
+          <div className="bg-white w-full max-w-sm mx-auto rounded-t-3xl shadow-2xl flex flex-col animate-slide-up"
+               style={{ maxHeight: "75vh" }}
+               onClick={e => e.stopPropagation()}>
+
+            {/* Header */}
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-brand-600 flex items-center justify-center flex-shrink-0">
+                <MessageCircle size={18} className="text-white" strokeWidth={2} />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-gray-900 text-sm">Asistente Piscilago</p>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <p className="text-[10px] text-emerald-600 font-semibold">En línea</p>
+                </div>
+              </div>
+              <button onClick={() => setOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors">
+                <X size={18} strokeWidth={2} />
+              </button>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+              {msgs.map((m, i) => (
+                <div key={i} className={`flex ${m.from === "user" ? "justify-end" : "justify-start"}`}>
+                  {m.from === "bot" && (
+                    <div className="w-7 h-7 rounded-full bg-brand-100 flex items-center justify-center flex-shrink-0 mr-2 mt-0.5">
+                      <MessageCircle size={13} className="text-brand-600" strokeWidth={2} />
+                    </div>
+                  )}
+                  <div className={`max-w-[78%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed
+                    ${m.from === "bot"
+                      ? "bg-gray-100 text-gray-800 rounded-tl-none"
+                      : "bg-brand-600 text-white rounded-tr-none"}`}>
+                    {m.text}
+                  </div>
+                </div>
+              ))}
+              <div ref={bottomRef} />
+            </div>
+
+            {/* Quick chips */}
+            <div className="px-4 pt-3 pb-5 border-t border-gray-100 flex-shrink-0 space-y-2">
+              <p className="text-[10px] font-bold text-gray-400 tracking-wide uppercase">
+                Preguntas frecuentes
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {BOT_CHIPS.map(chip => (
+                  <button key={chip.label} onClick={() => handleChip(chip)}
+                    className="flex items-center gap-1.5 bg-brand-50 border border-brand-200 text-brand-700 text-xs font-semibold px-3 py-2 rounded-xl active:scale-95 transition-all hover:bg-brand-100">
+                    <Send size={10} strokeWidth={2.5} />
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
 function Dashboard({ user, reservations, onReserve, onLogout, fastPass, setFastPass, onToast, showFPPopup, onDismissPopup }) {
   const [activeTab, setActiveTab] = useState("atracciones");
@@ -1224,6 +1338,9 @@ function Dashboard({ user, reservations, onReserve, onLogout, fastPass, setFastP
         </div>
         <BottomNav active={activeTab} onSelect={setActiveTab} />
       </div>
+
+      {/* HelpBot FAB — visible en todas las tabs */}
+      <HelpBot />
 
       {showFPPopup && !fastPass?.confirmed && (
         <FastPassPopup
