@@ -1010,34 +1010,179 @@ function FastPassTab({ user, fastPass, setFastPass, onToast }) {
 
 // ─── MAP DATA ─────────────────────────────────────────────────────────────────
 const MAP_PINS = [
-  { id:"entrada",    label:"Entrada / Taquilla",    type:"entrance", x:12, y:78, color:"#f59e0b", iconColor:"#78350f" },
-  { id:"megatob",   label:"Megatobogán",            type:"attraction",x:22, y:28, color:"#f97316", iconColor:"#fff" },
-  { id:"bosque",    label:"Bosque de la Lluvia",    type:"attraction",x:62, y:20, color:"#16a34a", iconColor:"#fff" },
-  { id:"piscola",   label:"Piscina de Olas",        type:"attraction",x:72, y:54, color:"#0284c7", iconColor:"#fff" },
-  { id:"tornado",   label:"El Tornado",             type:"attraction",x:40, y:58, color:"#7c3aed", iconColor:"#fff" },
-  { id:"riolento",  label:"Río Lento",              type:"attraction",x:18, y:62, color:"#0891b2", iconColor:"#fff" },
-  { id:"cascada",   label:"La Cascada",             type:"food",      x:50, y:38, color:"#ea580c", iconColor:"#fff" },
-  { id:"rancho",    label:"El Rancho",              type:"food",      x:32, y:72, color:"#b45309", iconColor:"#fff" },
-  { id:"pizza",     label:"PizzaLago",              type:"food",      x:80, y:32, color:"#dc2626", iconColor:"#fff" },
-  { id:"baño1",     label:"Servicios / Baños",      type:"restroom",  x:55, y:65, color:"#6b7280", iconColor:"#fff" },
-  { id:"ayuda",     label:"Punto de Ayuda",         type:"help",      x:30, y:44, color:"#2563eb", iconColor:"#fff" },
+  { id:"entrada",  label:"Entrada / Taquilla",   type:"entrance",   x:12, y:78, Icon:MapPin,          color:"#f59e0b", attrId:null,            restId:null },
+  { id:"megatob",  label:"Megatobogán",           type:"attraction", x:22, y:28, Icon:Waves,           color:"#1d4ed8", attrId:"megatobogan",   restId:null },
+  { id:"bosque",   label:"Bosque de la Lluvia",   type:"attraction", x:62, y:20, Icon:TreePine,        color:"#16a34a", attrId:"bosque-lluvia", restId:null },
+  { id:"piscola",  label:"Piscina de Olas",       type:"attraction", x:72, y:54, Icon:Droplets,        color:"#0284c7", attrId:"piscina-olas",  restId:null },
+  { id:"tornado",  label:"El Tornado",            type:"attraction", x:40, y:58, Icon:Tornado,         color:"#7c3aed", attrId:"tornado",       restId:null },
+  { id:"riolento", label:"Río Lento",             type:"attraction", x:18, y:62, Icon:Navigation,      color:"#0891b2", attrId:"rio-lento",     restId:null },
+  { id:"cascada",  label:"La Cascada",            type:"food",       x:50, y:38, Icon:UtensilsCrossed, color:"#ea580c", attrId:null,            restId:"cascada" },
+  { id:"rancho",   label:"El Rancho",             type:"food",       x:32, y:72, Icon:UtensilsCrossed, color:"#b45309", attrId:null,            restId:"rancho" },
+  { id:"pizza",    label:"PizzaLago",             type:"food",       x:80, y:32, Icon:UtensilsCrossed, color:"#dc2626", attrId:null,            restId:"pizzalago" },
+  { id:"baño1",    label:"Servicios / Baños",     type:"restroom",   x:55, y:65, Icon:Users,           color:"#6b7280", attrId:null,            restId:null },
+  { id:"ayuda",    label:"Punto de Ayuda",        type:"help",       x:30, y:44, Icon:HelpCircle,      color:"#2563eb", attrId:null,            restId:null },
 ];
 
-const PIN_ICONS = {
-  entrance:   "🚪",
-  attraction: "🎢",
-  food:       "🍽",
-  restroom:   "🚻",
-  help:       "ℹ",
+const TYPE_LABEL = {
+  entrance:"Entrada", attraction:"Atracción", food:"Restaurante", restroom:"Servicios", help:"Ayuda",
 };
 
-const PIN_LABEL_COLOR = {
-  entrance:   "bg-amber-100 text-amber-800 border-amber-300",
-  attraction: "bg-blue-50 text-brand-700 border-brand-200",
-  food:       "bg-orange-50 text-orange-700 border-orange-200",
-  restroom:   "bg-gray-100 text-gray-600 border-gray-300",
-  help:       "bg-blue-50 text-blue-700 border-blue-200",
-};
+const MAP_TIME_SLOTS = [
+  { id:"10-12", label:"10:00 – 12:00 hs" },
+  { id:"12-14", label:"12:00 – 14:00 hs" },
+  { id:"14-16", label:"14:00 – 16:00 hs" },
+];
+
+// ─── MAP BOOKING MODAL ────────────────────────────────────────────────────────
+function MapBookingModal({ pin, onConfirm, onClose }) {
+  const [slot, setSlot] = useState(null);
+  const attr = ATTRACTIONS.find(a => a.id === pin.attrId);
+  const { Icon } = pin;
+  return (
+    <div className="fixed inset-0 bg-black/50 z-40 flex items-end animate-fade-in" onClick={onClose}>
+      <div className="bg-white w-full rounded-t-3xl shadow-2xl animate-slide-up overflow-hidden"
+           onClick={e => e.stopPropagation()}>
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 bg-gray-200 rounded-full" />
+        </div>
+        <div className="px-5 pt-2 pb-4 flex items-center gap-3 border-b border-gray-100">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+               style={{ background: pin.color + "22" }}>
+            <Icon size={22} style={{ color: pin.color }} strokeWidth={1.8} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-black text-gray-900 text-base leading-tight">{pin.label}</p>
+            {attr && (
+              <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                <Clock size={10} strokeWidth={2} /> ~{attr.waitMin}–{attr.waitMax} min espera
+              </p>
+            )}
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X size={18} strokeWidth={2} />
+          </button>
+        </div>
+        <div className="px-5 py-4 space-y-2">
+          <p className="text-xs font-bold text-gray-400 tracking-widest uppercase mb-3">
+            Selecciona un horario
+          </p>
+          {MAP_TIME_SLOTS.map(s => (
+            <button key={s.id} onClick={() => setSlot(s.id)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all
+                ${slot === s.id
+                  ? "border-brand-500 bg-brand-50 text-brand-700"
+                  : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"}`}>
+              <Timer size={15} strokeWidth={2}
+                     className={slot === s.id ? "text-brand-500" : "text-gray-400"} />
+              <span className="font-semibold text-sm flex-1 text-left">{s.label}</span>
+              {slot === s.id && (
+                <CheckCircle2 size={16} className="text-brand-500" strokeWidth={2.5} />
+              )}
+            </button>
+          ))}
+          <button
+            onClick={() => slot && onConfirm({ pin, slot })}
+            disabled={!slot}
+            className="w-full mt-2 flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-bold py-4 rounded-2xl text-sm transition-all shadow-lg shadow-brand-200 disabled:opacity-40 disabled:pointer-events-none"
+          >
+            <QrCode size={16} strokeWidth={2.5} /> Confirmar y obtener QR
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── MAP MENU MODAL ───────────────────────────────────────────────────────────
+function MapMenuModal({ pin, onConfirm, onClose }) {
+  const [cart, setCart] = useState({});
+  const rest = RESTAURANTS.find(r => r.id === pin.restId);
+  if (!rest) return null;
+
+  const add = (item) =>
+    setCart(p => ({ ...p, [item.id]: { ...item, qty: (p[item.id]?.qty || 0) + 1 } }));
+  const sub = (item) =>
+    setCart(p => {
+      const qty = (p[item.id]?.qty || 1) - 1;
+      if (qty <= 0) { const n = { ...p }; delete n[item.id]; return n; }
+      return { ...p, [item.id]: { ...item, qty } };
+    });
+
+  const items = Object.values(cart);
+  const total = items.reduce((s, i) => s + i.price * i.qty, 0);
+  const count = items.reduce((s, i) => s + i.qty, 0);
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-40 flex items-end animate-fade-in" onClick={onClose}>
+      <div className="bg-white w-full rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
+           style={{ maxHeight: "80vh" }} onClick={e => e.stopPropagation()}>
+        <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+          <div className="w-10 h-1 bg-gray-200 rounded-full" />
+        </div>
+        <div className="px-5 pt-2 pb-4 flex items-center gap-3 border-b border-gray-100 flex-shrink-0">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+               style={{ background: pin.color + "22" }}>
+            <UtensilsCrossed size={22} style={{ color: pin.color }} strokeWidth={1.8} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-black text-gray-900 text-base leading-tight">{rest.name}</p>
+            <p className="text-xs text-gray-400 mt-0.5">{rest.desc}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X size={18} strokeWidth={2} />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto divide-y divide-gray-50">
+          {rest.items.map(item => {
+            const qty = cart[item.id]?.qty || 0;
+            return (
+              <div key={item.id} className="flex items-center gap-3 px-5 py-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-800">{item.name}</p>
+                  <p className="text-xs font-bold text-brand-600 mt-0.5">{fmtCOP(item.price)}</p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {qty > 0 && (
+                    <>
+                      <button onClick={() => sub(item)}
+                        className="w-7 h-7 rounded-lg bg-red-50 border border-red-200 text-red-500 flex items-center justify-center active:scale-95 transition-all">
+                        <Minus size={12} strokeWidth={2.5} />
+                      </button>
+                      <span className="text-sm font-black text-gray-900 w-4 text-center">{qty}</span>
+                    </>
+                  )}
+                  <button onClick={() => add(item)}
+                    className="w-7 h-7 rounded-lg bg-brand-600 text-white flex items-center justify-center active:scale-95 transition-all shadow-sm">
+                    <Plus size={12} strokeWidth={2.5} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="px-5 py-4 border-t border-gray-100 flex-shrink-0">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2 text-gray-500">
+              <ShoppingCart size={14} strokeWidth={2} />
+              <span className="text-sm font-semibold">{count} ítem{count !== 1 ? "s" : ""}</span>
+            </div>
+            <span className="font-black text-brand-700 text-base">
+              {total > 0 ? fmtCOP(total) : "—"}
+            </span>
+          </div>
+          <button
+            onClick={() => count > 0 && onConfirm({ pin, items, total })}
+            disabled={count === 0}
+            className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-bold py-4 rounded-2xl text-sm transition-all shadow-lg shadow-brand-200 disabled:opacity-40 disabled:pointer-events-none"
+          >
+            <QrCode size={16} strokeWidth={2.5} />
+            Confirmar pedido{count > 0 ? ` · ${fmtCOP(total)}` : ""}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── MAP TAB ──────────────────────────────────────────────────────────────────
 const MAP_IMG_SRC = import.meta.env.BASE_URL + "assets/mapa_real.jpg";
@@ -1045,13 +1190,15 @@ const SCALE_MIN = 0.8;
 const SCALE_MAX = 4;
 
 function MapTab() {
-  const [scale, setScale]   = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [imgOk, setImgOk]   = useState(true);
+  const [scale, setScale]     = useState(1);
+  const [offset, setOffset]   = useState({ x: 0, y: 0 });
+  const [imgOk, setImgOk]     = useState(true);
+  const [filter, setFilter]   = useState("all");
+  const [selected, setSelected] = useState(null);
+  const [modal, setModal]     = useState(null);
 
-  const dragging  = useRef(false);
-  const lastPos   = useRef({ x: 0, y: 0 });
-  const containerRef = useRef(null);
+  const dragging = useRef(false);
+  const lastPos  = useRef({ x: 0, y: 0 });
 
   const onPointerDown = useCallback((e) => {
     dragging.current = true;
@@ -1069,43 +1216,67 @@ function MapTab() {
 
   const onPointerUp = useCallback(() => { dragging.current = false; }, []);
 
-  const zoom = (delta) => {
+  const zoom = (delta) =>
     setScale(s => Math.min(SCALE_MAX, Math.max(SCALE_MIN, +(s + delta).toFixed(2))));
-  };
 
-  const reset = () => { setScale(1); setOffset({ x: 0, y: 0 }); };
+  const reset = () => { setScale(1); setOffset({ x: 0, y: 0 }); setSelected(null); };
+
+  const handlePin = useCallback((e, pin) => {
+    e.stopPropagation();
+    setSelected(p => p?.id === pin.id ? null : pin);
+  }, []);
+
+  const FILTERS = [
+    { id:"all", label:"Todo" },
+    { id:"attraction", label:"Atracciones" },
+    { id:"food", label:"Comida" },
+    { id:"restroom", label:"Servicios" },
+  ];
+
+  const visible = MAP_PINS.filter(
+    p => filter === "all" || p.type === filter || p.type === "entrance"
+  );
+
+  const handleConfirm = (data) => {
+    setModal(null);
+    setSelected(null);
+  };
 
   return (
     <div className="flex flex-col h-full select-none">
+      {/* Filter chips */}
+      <div className="px-4 pt-3 pb-2 flex gap-2 overflow-x-auto flex-shrink-0 no-scrollbar">
+        {FILTERS.map(f => (
+          <button key={f.id} onClick={() => { setFilter(f.id); setSelected(null); }}
+            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold border transition-all
+              ${filter === f.id
+                ? "bg-brand-600 text-white border-brand-600"
+                : "bg-white text-gray-500 border-gray-200 hover:border-brand-300"}`}>
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       {/* Map viewport */}
       <div
-        ref={containerRef}
-        className="flex-1 mx-4 mt-3 mb-3 rounded-2xl overflow-hidden border-2 border-brand-100 shadow-inner bg-sky-100 cursor-grab active:cursor-grabbing"
+        className="flex-1 mx-4 mb-2 rounded-2xl overflow-hidden border-2 border-brand-100 shadow-inner bg-sky-100 cursor-grab active:cursor-grabbing relative"
         style={{ minHeight: 280, touchAction: "none" }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerLeave={onPointerUp}
       >
-        {/* Transformable layer */}
-        <div
-          style={{
-            transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
-            transformOrigin: "50% 50%",
-            width: "100%",
-            height: "100%",
-            position: "relative",
-            willChange: "transform",
-          }}
-        >
+        {/* Transformable layer — image + pins move together */}
+        <div style={{
+          transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+          transformOrigin: "50% 50%",
+          width: "100%", height: "100%",
+          position: "relative", willChange: "transform",
+        }}>
           {imgOk ? (
-            <img
-              src={MAP_IMG_SRC}
-              alt="Mapa Piscilago"
-              draggable={false}
-              onError={() => setImgOk(false)}
-              className="absolute inset-0 w-full h-full object-cover"
-            />
+            <img src={MAP_IMG_SRC} alt="Mapa Piscilago" draggable={false}
+                 onError={() => setImgOk(false)}
+                 className="absolute inset-0 w-full h-full object-cover" />
           ) : (
             <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full"
                  xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
@@ -1116,58 +1287,128 @@ function MapTab() {
               <ellipse cx="68" cy="54" rx="13" ry="9"  fill="#38bdf8" opacity="0.6" />
               <path d="M10 65 Q20 58 18 62 Q16 68 22 68 Q28 68 26 72 Q22 78 30 80"
                     fill="none" stroke="#7dd3fc" strokeWidth="3" strokeLinecap="round" opacity="0.8" />
-              <circle cx="60" cy="20" r="9"  fill="#4ade80" opacity="0.7" />
-              <circle cx="65" cy="18" r="7"  fill="#22c55e" opacity="0.6" />
-              <circle cx="55" cy="22" r="6"  fill="#4ade80" opacity="0.5" />
-              <circle cx="22" cy="28" r="5"  fill="#4ade80" opacity="0.5" />
-              <circle cx="78" cy="34" r="6"  fill="#4ade80" opacity="0.5" />
-              <circle cx="82" cy="30" r="4"  fill="#22c55e" opacity="0.4" />
+              <circle cx="60" cy="20" r="9" fill="#4ade80" opacity="0.7" />
+              <circle cx="65" cy="18" r="7" fill="#22c55e" opacity="0.6" />
+              <circle cx="55" cy="22" r="6" fill="#4ade80" opacity="0.5" />
+              <circle cx="22" cy="28" r="5" fill="#4ade80" opacity="0.5" />
+              <circle cx="78" cy="34" r="6" fill="#4ade80" opacity="0.5" />
+              <circle cx="82" cy="30" r="4" fill="#22c55e" opacity="0.4" />
               <path d="M12 78 Q22 70 30 65 Q42 58 50 50 Q60 40 62 28"
                     fill="none" stroke="#fef9c3" strokeWidth="2.5" strokeDasharray="3,2" opacity="0.9" />
-              <path d="M50 50 Q65 50 72 54"
-                    fill="none" stroke="#fef9c3" strokeWidth="2" strokeDasharray="3,2" opacity="0.8" />
-              <path d="M50 50 Q42 56 40 58"
-                    fill="none" stroke="#fef9c3" strokeWidth="2" strokeDasharray="3,2" opacity="0.8" />
+              <path d="M50 50 Q65 50 72 54" fill="none" stroke="#fef9c3" strokeWidth="2" strokeDasharray="3,2" opacity="0.8" />
+              <path d="M50 50 Q42 56 40 58" fill="none" stroke="#fef9c3" strokeWidth="2" strokeDasharray="3,2" opacity="0.8" />
               <rect x="8" y="74" width="8" height="3" rx="1" fill="#fde68a" opacity="0.9" />
               <text x="50" y="97" textAnchor="middle" fontSize="3.5" fill="#0ea5e9" fontWeight="bold" opacity="0.7">
                 LAGO TOMINÉ
               </text>
             </svg>
           )}
+
+          {/* Pins — inside transform so they move with the map */}
+          {visible.map(pin => {
+            const { Icon } = pin;
+            const isSelected = selected?.id === pin.id;
+            return (
+              <button
+                key={pin.id}
+                onPointerDown={e => e.stopPropagation()}
+                onClick={e => handlePin(e, pin)}
+                style={{ left: `${pin.x}%`, top: `${pin.y}%`, position: "absolute" }}
+                className="transform -translate-x-1/2 -translate-y-full active:scale-90 transition-transform z-10"
+              >
+                <div
+                  className={`w-9 h-9 rounded-full flex items-center justify-center shadow-lg border-2 border-white transition-all
+                    ${isSelected ? "scale-125 ring-2 ring-offset-1" : ""}`}
+                  style={{
+                    background: pin.color,
+                    ringColor: pin.color,
+                  }}
+                >
+                  <Icon size={16} color="#fff" strokeWidth={2} />
+                </div>
+                <div className="w-0 h-0 border-l-[5px] border-r-[5px] border-t-[6px] border-l-transparent border-r-transparent mx-auto"
+                     style={{ borderTopColor: pin.color }} />
+              </button>
+            );
+          })}
         </div>
 
-        {/* Zoom controls — outside transform layer */}
-        <div className="absolute top-3 right-3 flex flex-col gap-1 z-10">
-          <button
-            onClick={e => { e.stopPropagation(); zoom(0.3); }}
-            className="w-8 h-8 bg-white/90 rounded-lg shadow-md flex items-center justify-center text-gray-700 active:scale-95 transition-all border border-gray-200"
-          >
-            <ZoomIn size={15} strokeWidth={2} />
-          </button>
-          <button
-            onClick={e => { e.stopPropagation(); zoom(-0.3); }}
-            className="w-8 h-8 bg-white/90 rounded-lg shadow-md flex items-center justify-center text-gray-700 active:scale-95 transition-all border border-gray-200"
-          >
-            <ZoomOut size={15} strokeWidth={2} />
-          </button>
-          <button
-            onClick={e => { e.stopPropagation(); reset(); }}
-            className="w-8 h-8 bg-white/90 rounded-lg shadow-md flex items-center justify-center text-gray-700 active:scale-95 transition-all border border-gray-200"
-          >
-            <Map size={13} strokeWidth={2} />
-          </button>
+        {/* Zoom controls */}
+        <div className="absolute top-3 right-3 flex flex-col gap-1 z-20">
+          {[
+            { action: () => zoom(0.3),  Icon: ZoomIn  },
+            { action: () => zoom(-0.3), Icon: ZoomOut },
+            { action: reset,            Icon: Map     },
+          ].map(({ action, Icon }, i) => (
+            <button key={i}
+              onPointerDown={e => e.stopPropagation()}
+              onClick={e => { e.stopPropagation(); action(); }}
+              className="w-8 h-8 bg-white/90 rounded-lg shadow-md flex items-center justify-center text-gray-700 active:scale-95 transition-all border border-gray-200">
+              <Icon size={14} strokeWidth={2} />
+            </button>
+          ))}
         </div>
 
         {/* Scale badge */}
-        <div className="absolute bottom-3 right-3 bg-black/40 text-white text-[10px] font-bold px-2 py-1 rounded-lg z-10">
+        <div className="absolute bottom-3 right-3 bg-black/40 text-white text-[10px] font-bold px-2 py-1 rounded-lg z-20 pointer-events-none">
           {Math.round(scale * 100)}%
         </div>
+
+        {/* Pin info card — bottom overlay */}
+        {selected && (
+          <div className="absolute bottom-3 left-3 right-14 bg-white rounded-xl shadow-xl border border-gray-100 px-3 py-2.5 flex items-center gap-2.5 animate-fade-in z-20">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                 style={{ background: selected.color + "22" }}>
+              <selected.Icon size={17} style={{ color: selected.color }} strokeWidth={2} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-gray-900 text-xs truncate">{selected.label}</p>
+              <p className="text-[10px] text-gray-400 font-medium">{TYPE_LABEL[selected.type]}</p>
+            </div>
+            {selected.type === "attraction" && (
+              <button
+                onPointerDown={e => e.stopPropagation()}
+                onClick={e => { e.stopPropagation(); setModal("book"); }}
+                className="flex-shrink-0 bg-brand-600 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg active:scale-95 transition-all">
+                Reservar
+              </button>
+            )}
+            {selected.type === "food" && (
+              <button
+                onPointerDown={e => e.stopPropagation()}
+                onClick={e => { e.stopPropagation(); setModal("menu"); }}
+                className="flex-shrink-0 bg-orange-500 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg active:scale-95 transition-all">
+                Ver Menú
+              </button>
+            )}
+            <button
+              onPointerDown={e => e.stopPropagation()}
+              onClick={e => { e.stopPropagation(); setSelected(null); }}
+              className="text-gray-400 flex-shrink-0">
+              <X size={14} strokeWidth={2} />
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Hint */}
-      <p className="text-center text-[10px] text-gray-400 pb-4 font-medium">
-        Arrastra para mover · Usa los botones para hacer zoom
+      <p className="text-center text-[10px] text-gray-400 pb-3 font-medium">
+        Toca un pin · Arrastra para mover · Usa los botones para hacer zoom
       </p>
+
+      {modal === "book" && selected && (
+        <MapBookingModal
+          pin={selected}
+          onConfirm={handleConfirm}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {modal === "menu" && selected && (
+        <MapMenuModal
+          pin={selected}
+          onConfirm={handleConfirm}
+          onClose={() => setModal(null)}
+        />
+      )}
     </div>
   );
 }
