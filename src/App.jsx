@@ -96,12 +96,13 @@ const getFPAccessible = (category) => {
     .map(([id]) => id);
 };
 
-// ─── LOGO SVG (fiel al logo oficial) ─────────────────────────────────────────
+// ─── LOGO SVG — solo para pantallas Login/Verify ─────────────────────────────
 function PiscilagoLogo({ size = "md" }) {
   const w = size === "lg" ? 200 : size === "sm" ? 110 : 150;
   return (
     <div style={{ width: w }} className="mx-auto select-none">
-      <svg viewBox="0 0 240 130" xmlns="http://www.w3.org/2000/svg" className="w-full">
+      <svg viewBox="0 0 240 130" xmlns="http://www.w3.org/2000/svg"
+           className="w-full" style={{ aspectRatio: "240/130" }}>
         <defs>
           <path id="arcT2" d="M 28 100 A 92 92 0 0 1 212 100" />
           <path id="arcB2" d="M 22 108 A 98 98 0 0 0 218 108" />
@@ -119,6 +120,28 @@ function PiscilagoLogo({ size = "md" }) {
           <textPath href="#arcB2" startOffset="7%">DE CONSERVACIÓN</textPath>
         </text>
       </svg>
+    </div>
+  );
+}
+
+// ─── HEADER WORDMARK (CSS puro, sin distorsión) ──────────────────────────────
+function PiscilagoWordmark() {
+  return (
+    <div className="select-none flex flex-col items-start">
+      {/* PARQUE ACUÁTICO y Colsubsidio */}
+      <p className="text-brand-300 text-[8px] font-semibold tracking-widest uppercase leading-none mb-0.5">
+        Parque Acuático · <span className="text-gold-300">Colsubsidio</span>
+      </p>
+      {/* PISC ◆ LAGO */}
+      <div className="flex items-center gap-0.5 leading-none">
+        <span className="text-white font-black text-[22px] tracking-tight">PISC</span>
+        {/* K / flecha dorada */}
+        <svg width="12" height="26" viewBox="0 0 12 26" className="flex-shrink-0 mx-0.5">
+          <polygon points="0,0 0,13 11,13" fill="#F59E0B" />
+          <polygon points="0,13 0,26 11,13" fill="#F59E0B" />
+        </svg>
+        <span className="text-white font-black text-[22px] tracking-tight">LAGO</span>
+      </div>
     </div>
   );
 }
@@ -503,12 +526,12 @@ function DashboardHeader({ user, fastPassActive, onLogout }) {
       <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-brand-700 opacity-30 pointer-events-none" />
       <div className="absolute top-2 right-24 w-16 h-16 rounded-full bg-gold-400 opacity-10 pointer-events-none" />
 
-      {/* Top row: logo + logout */}
+      {/* Top row: wordmark + logout */}
       <div className="relative flex items-center justify-between mb-3">
-        <PiscilagoLogo size="sm" />
+        <PiscilagoWordmark />
         <button
           onClick={onLogout}
-          className="flex items-center gap-1.5 text-brand-300 hover:text-white text-xs font-semibold transition-colors"
+          className="flex items-center gap-1.5 text-brand-300 hover:text-white text-xs font-semibold transition-colors flex-shrink-0"
         >
           <LogOut size={13} strokeWidth={2} /> Salir
         </button>
