@@ -6,7 +6,9 @@ import {
   LogOut, Star, Clock, Users, X, QrCode, CheckCircle2,
   Wind, Droplets, TreePine, Tornado, Navigation,
   BadgeCheck, CreditCard as CardIcon, ChevronRight, Lock as LockIcon,
-  MessageCircle, Send
+  MessageCircle, Send,
+  MapPin, HelpCircle, ArrowLeft, Minus, Plus, ShoppingCart,
+  ZoomIn, ZoomOut, Timer, Utensils, Toilet
 } from "lucide-react";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
@@ -1038,141 +1040,134 @@ const PIN_LABEL_COLOR = {
 };
 
 // ─── MAP TAB ──────────────────────────────────────────────────────────────────
+const MAP_IMG_SRC = import.meta.env.BASE_URL + "assets/mapa_real.jpg";
+const SCALE_MIN = 0.8;
+const SCALE_MAX = 4;
+
 function MapTab() {
-  const [selected, setSelected] = useState(null);
-  const [filter, setFilter]     = useState("all");
+  const [scale, setScale]   = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [imgOk, setImgOk]   = useState(true);
 
-  const FILTERS = [
-    { id:"all",        label:"Todo" },
-    { id:"attraction", label:"Atracciones" },
-    { id:"food",       label:"Comida" },
-    { id:"restroom",   label:"Servicios" },
-    { id:"help",       label:"Ayuda" },
-  ];
+  const dragging  = useRef(false);
+  const lastPos   = useRef({ x: 0, y: 0 });
+  const containerRef = useRef(null);
 
-  const visible = MAP_PINS.filter(p => filter === "all" || p.type === filter || p.type === "entrance");
+  const onPointerDown = useCallback((e) => {
+    dragging.current = true;
+    lastPos.current  = { x: e.clientX, y: e.clientY };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }, []);
+
+  const onPointerMove = useCallback((e) => {
+    if (!dragging.current) return;
+    const dx = e.clientX - lastPos.current.x;
+    const dy = e.clientY - lastPos.current.y;
+    lastPos.current = { x: e.clientX, y: e.clientY };
+    setOffset(p => ({ x: p.x + dx, y: p.y + dy }));
+  }, []);
+
+  const onPointerUp = useCallback(() => { dragging.current = false; }, []);
+
+  const zoom = (delta) => {
+    setScale(s => Math.min(SCALE_MAX, Math.max(SCALE_MIN, +(s + delta).toFixed(2))));
+  };
+
+  const reset = () => { setScale(1); setOffset({ x: 0, y: 0 }); };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Filter chips */}
-      <div className="px-4 pt-3 pb-2 flex gap-2 overflow-x-auto flex-shrink-0 no-scrollbar">
-        {FILTERS.map(f => (
-          <button key={f.id} onClick={() => setFilter(f.id)}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold border transition-all
-              ${filter === f.id
-                ? "bg-brand-600 text-white border-brand-600"
-                : "bg-white text-gray-500 border-gray-200 hover:border-brand-300"}`}>
-            {f.label}
+    <div className="flex flex-col h-full select-none">
+      {/* Map viewport */}
+      <div
+        ref={containerRef}
+        className="flex-1 mx-4 mt-3 mb-3 rounded-2xl overflow-hidden border-2 border-brand-100 shadow-inner bg-sky-100 cursor-grab active:cursor-grabbing"
+        style={{ minHeight: 280, touchAction: "none" }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerLeave={onPointerUp}
+      >
+        {/* Transformable layer */}
+        <div
+          style={{
+            transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+            transformOrigin: "50% 50%",
+            width: "100%",
+            height: "100%",
+            position: "relative",
+            willChange: "transform",
+          }}
+        >
+          {imgOk ? (
+            <img
+              src={MAP_IMG_SRC}
+              alt="Mapa Piscilago"
+              draggable={false}
+              onError={() => setImgOk(false)}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          ) : (
+            <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full"
+                 xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+              <rect width="100" height="100" fill="#bae6fd" />
+              <ellipse cx="50" cy="50" rx="44" ry="42" fill="#bbf7d0" />
+              <ellipse cx="48" cy="46" rx="36" ry="32" fill="#86efac" />
+              <ellipse cx="68" cy="54" rx="16" ry="12" fill="#7dd3fc" opacity="0.85" />
+              <ellipse cx="68" cy="54" rx="13" ry="9"  fill="#38bdf8" opacity="0.6" />
+              <path d="M10 65 Q20 58 18 62 Q16 68 22 68 Q28 68 26 72 Q22 78 30 80"
+                    fill="none" stroke="#7dd3fc" strokeWidth="3" strokeLinecap="round" opacity="0.8" />
+              <circle cx="60" cy="20" r="9"  fill="#4ade80" opacity="0.7" />
+              <circle cx="65" cy="18" r="7"  fill="#22c55e" opacity="0.6" />
+              <circle cx="55" cy="22" r="6"  fill="#4ade80" opacity="0.5" />
+              <circle cx="22" cy="28" r="5"  fill="#4ade80" opacity="0.5" />
+              <circle cx="78" cy="34" r="6"  fill="#4ade80" opacity="0.5" />
+              <circle cx="82" cy="30" r="4"  fill="#22c55e" opacity="0.4" />
+              <path d="M12 78 Q22 70 30 65 Q42 58 50 50 Q60 40 62 28"
+                    fill="none" stroke="#fef9c3" strokeWidth="2.5" strokeDasharray="3,2" opacity="0.9" />
+              <path d="M50 50 Q65 50 72 54"
+                    fill="none" stroke="#fef9c3" strokeWidth="2" strokeDasharray="3,2" opacity="0.8" />
+              <path d="M50 50 Q42 56 40 58"
+                    fill="none" stroke="#fef9c3" strokeWidth="2" strokeDasharray="3,2" opacity="0.8" />
+              <rect x="8" y="74" width="8" height="3" rx="1" fill="#fde68a" opacity="0.9" />
+              <text x="50" y="97" textAnchor="middle" fontSize="3.5" fill="#0ea5e9" fontWeight="bold" opacity="0.7">
+                LAGO TOMINÉ
+              </text>
+            </svg>
+          )}
+        </div>
+
+        {/* Zoom controls — outside transform layer */}
+        <div className="absolute top-3 right-3 flex flex-col gap-1 z-10">
+          <button
+            onClick={e => { e.stopPropagation(); zoom(0.3); }}
+            className="w-8 h-8 bg-white/90 rounded-lg shadow-md flex items-center justify-center text-gray-700 active:scale-95 transition-all border border-gray-200"
+          >
+            <ZoomIn size={15} strokeWidth={2} />
           </button>
-        ))}
-      </div>
-
-      {/* Map container */}
-      <div className="flex-1 mx-4 mb-2 relative overflow-hidden rounded-2xl border-2 border-brand-100 shadow-inner"
-           style={{ minHeight: 260 }}>
-        {/* SVG illustrated map */}
-        <svg viewBox="0 0 100 100" className="w-full h-full" xmlns="http://www.w3.org/2000/svg"
-             preserveAspectRatio="xMidYMid slice">
-          {/* Sky / water border */}
-          <rect width="100" height="100" fill="#bae6fd" />
-
-          {/* Main island shape */}
-          <ellipse cx="50" cy="50" rx="44" ry="42" fill="#bbf7d0" />
-
-          {/* Interior grass zones */}
-          <ellipse cx="48" cy="46" rx="36" ry="32" fill="#86efac" />
-
-          {/* Central lake / piscina de olas */}
-          <ellipse cx="68" cy="54" rx="16" ry="12" fill="#7dd3fc" opacity="0.85" />
-          <ellipse cx="68" cy="54" rx="13" ry="9"  fill="#38bdf8" opacity="0.6" />
-
-          {/* Río Lento — winding river */}
-          <path d="M10 65 Q20 58 18 62 Q16 68 22 68 Q28 68 26 72 Q22 78 30 80"
-                fill="none" stroke="#7dd3fc" strokeWidth="3" strokeLinecap="round" opacity="0.8" />
-
-          {/* Dense tree clusters */}
-          <circle cx="60" cy="20" r="9"  fill="#4ade80" opacity="0.7" />
-          <circle cx="65" cy="18" r="7"  fill="#22c55e" opacity="0.6" />
-          <circle cx="55" cy="22" r="6"  fill="#4ade80" opacity="0.5" />
-          <circle cx="22" cy="28" r="5"  fill="#4ade80" opacity="0.5" />
-          <circle cx="78" cy="34" r="6"  fill="#4ade80" opacity="0.5" />
-          <circle cx="82" cy="30" r="4"  fill="#22c55e" opacity="0.4" />
-
-          {/* Paths / roads */}
-          <path d="M12 78 Q22 70 30 65 Q42 58 50 50 Q60 40 62 28"
-                fill="none" stroke="#fef9c3" strokeWidth="2.5" strokeDasharray="3,2" opacity="0.9" />
-          <path d="M50 50 Q65 50 72 54"
-                fill="none" stroke="#fef9c3" strokeWidth="2" strokeDasharray="3,2" opacity="0.8" />
-          <path d="M50 50 Q42 56 40 58"
-                fill="none" stroke="#fef9c3" strokeWidth="2" strokeDasharray="3,2" opacity="0.8" />
-          <path d="M30 65 Q22 64 18 62"
-                fill="none" stroke="#fef9c3" strokeWidth="2" strokeDasharray="3,2" opacity="0.7" />
-
-          {/* Entrance road */}
-          <rect x="8" y="74" width="8" height="3" rx="1" fill="#fde68a" opacity="0.9" />
-          <text x="50" y="97" textAnchor="middle" fontSize="3.5" fill="#0ea5e9" fontWeight="bold" opacity="0.7">
-            LAGO TOMINÉ
-          </text>
-        </svg>
-
-        {/* Pins overlay */}
-        {visible.map(pin => (
-          <button key={pin.id}
-            onClick={() => setSelected(selected?.id === pin.id ? null : pin)}
-            style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
-            className="absolute -translate-x-1/2 -translate-y-full transition-transform active:scale-90">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg border-2 border-white text-sm
-              ${selected?.id === pin.id ? "scale-125 ring-2 ring-white ring-offset-1" : ""}`}
-                 style={{ background: pin.color }}>
-              <span style={{ color: pin.iconColor, fontSize: 14 }}>{PIN_ICONS[pin.type]}</span>
-            </div>
-            <div className="w-0 h-0 border-l-[5px] border-r-[5px] border-t-[6px] border-transparent mx-auto"
-                 style={{ borderTopColor: pin.color }} />
+          <button
+            onClick={e => { e.stopPropagation(); zoom(-0.3); }}
+            className="w-8 h-8 bg-white/90 rounded-lg shadow-md flex items-center justify-center text-gray-700 active:scale-95 transition-all border border-gray-200"
+          >
+            <ZoomOut size={15} strokeWidth={2} />
           </button>
-        ))}
+          <button
+            onClick={e => { e.stopPropagation(); reset(); }}
+            className="w-8 h-8 bg-white/90 rounded-lg shadow-md flex items-center justify-center text-gray-700 active:scale-95 transition-all border border-gray-200"
+          >
+            <Map size={13} strokeWidth={2} />
+          </button>
+        </div>
 
-        {/* Tooltip */}
-        {selected && (
-          <div className="absolute bottom-3 left-3 right-3 bg-white rounded-xl shadow-xl border border-gray-100 px-3 py-2.5 flex items-center gap-2 animate-fade-in">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-base"
-                 style={{ background: selected.color }}>
-              <span style={{ color: selected.iconColor }}>{PIN_ICONS[selected.type]}</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-gray-900 text-xs truncate">{selected.label}</p>
-              <p className="text-[10px] text-gray-400 capitalize">{selected.type === "attraction" ? "Atracción" : selected.type === "food" ? "Comida" : selected.type === "restroom" ? "Servicios" : selected.type === "entrance" ? "Entrada" : "Ayuda"}</p>
-            </div>
-            <button onClick={() => setSelected(null)}
-              className="text-gray-400 hover:text-gray-600 flex-shrink-0">
-              <X size={14} strokeWidth={2} />
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Legend */}
-      <div className="px-4 pb-4 flex-shrink-0">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3">
-          <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-2">Leyenda</p>
-          <div className="grid grid-cols-2 gap-1.5">
-            {[
-              { type:"entrance",   label:"Entrada / Salida", color:"#f59e0b" },
-              { type:"attraction", label:"Atracciones",      color:"#f97316" },
-              { type:"food",       label:"Comida",           color:"#ea580c" },
-              { type:"restroom",   label:"Baños / Servicios",color:"#6b7280" },
-              { type:"help",       label:"Punto de ayuda",   color:"#2563eb" },
-            ].map(l => (
-              <div key={l.type} className="flex items-center gap-1.5">
-                <div className="w-4 h-4 rounded-full flex-shrink-0 flex items-center justify-center text-white text-[9px]"
-                     style={{ background: l.color }}>
-                  {PIN_ICONS[l.type]}
-                </div>
-                <span className="text-[10px] text-gray-600 font-medium">{l.label}</span>
-              </div>
-            ))}
-          </div>
+        {/* Scale badge */}
+        <div className="absolute bottom-3 right-3 bg-black/40 text-white text-[10px] font-bold px-2 py-1 rounded-lg z-10">
+          {Math.round(scale * 100)}%
         </div>
       </div>
+
+      {/* Hint */}
+      <p className="text-center text-[10px] text-gray-400 pb-4 font-medium">
+        Arrastra para mover · Usa los botones para hacer zoom
+      </p>
     </div>
   );
 }
