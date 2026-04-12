@@ -4,7 +4,8 @@ import {
   Eye, EyeOff, Zap, ShieldCheck, RefreshCw, AlertCircle,
   Waves, Zap as ZapIcon, Map, UtensilsCrossed, Ticket,
   LogOut, Star, Clock, Users, X, QrCode, CheckCircle2,
-  Wind, Droplets, TreePine, Tornado, Navigation
+  Wind, Droplets, TreePine, Tornado, Navigation,
+  BadgeCheck, CreditCard as CardIcon, ChevronRight, Lock as LockIcon
 } from "lucide-react";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
@@ -86,6 +87,13 @@ const getTimeSlot = () => {
 };
 const randWait = () => Math.floor(Math.random() * 35) + 3;
 const genCode = (prefix) => `${prefix}-${Date.now().toString(36).toUpperCase()}`;
+const getFPAccessible = (category) => {
+  const slot = getTimeSlot();
+  if (!slot || !category || category === "nonAffiliate") return [];
+  return Object.entries(FP_MATRIX[slot])
+    .filter(([, cat]) => cat === category)
+    .map(([id]) => id);
+};
 
 // ─── LOGO SVG (fiel al logo oficial) ─────────────────────────────────────────
 function PiscilagoLogo({ size = "md" }) {
@@ -538,8 +546,365 @@ function DashboardHeader({ user, fastPassActive, onLogout }) {
   );
 }
 
+// ─── FAST PASS: POPUP ─────────────────────────────────────────────────────────
+function FastPassPopup({ userName, onActivate, onDismiss }) {
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center animate-fade-in p-0">
+      <div className="bg-white w-full max-w-sm rounded-t-3xl shadow-2xl animate-slide-up overflow-hidden">
+        {/* Hero */}
+        <div className="relative bg-brand-900 px-5 pt-8 pb-10 overflow-hidden text-center">
+          <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-brand-700 opacity-40" />
+          <div className="absolute -bottom-8 -left-8 w-24 h-24 rounded-full bg-gold-400 opacity-15" />
+          <div className="relative">
+            <div className="w-14 h-14 rounded-2xl bg-gold-400 flex items-center justify-center mx-auto mb-3 shadow-lg">
+              <ZapIcon size={28} className="text-brand-900" strokeWidth={2.5} />
+            </div>
+            <h2 className="text-white font-black text-2xl">Fast Pass</h2>
+            <p className="text-brand-300 text-sm mt-1">Acceso prioritario · Sin filas</p>
+          </div>
+        </div>
+        {/* Content */}
+        <div className="px-5 py-5 space-y-3 -mt-5">
+          <div className="bg-white rounded-2xl shadow-md border border-gray-100 px-4 py-4">
+            <p className="font-bold text-gray-900 text-sm mb-2">
+              ¡Hola, <span className="text-brand-600">{userName?.split(" ")[0]}</span>! 👋
+            </p>
+            <p className="text-gray-500 text-xs leading-relaxed">
+              Activa el <strong>Fast Pass</strong> y salta las filas en todas las atracciones.
+              Afiliados Colsubsidio desde <strong className="text-brand-600">{fmtCOP(FAST_PASS_PRICES.A)}</strong>.
+            </p>
+            <div className="flex gap-2 mt-3">
+              {["Sin filas","Prioridad total","Todo el día"].map(b => (
+                <div key={b} className="flex-1 bg-brand-50 rounded-xl py-2 text-center">
+                  <p className="text-[10px] font-bold text-brand-700">{b}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <button onClick={onActivate}
+            className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-bold py-4 rounded-2xl text-sm transition-all shadow-lg shadow-brand-200">
+            <ZapIcon size={16} strokeWidth={2.5} /> Activar Fast Pass
+          </button>
+          <button onClick={onDismiss} className="w-full text-gray-400 text-xs py-2 font-medium">
+            Ahora no
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── FAST PASS: PAYMENT SIM ───────────────────────────────────────────────────
+function PaymentSim({ price, onPaid }) {
+  const [paying, setPaying] = useState(false);
+  const [done, setDone]     = useState(false);
+  const run = () => {
+    setPaying(true);
+    setTimeout(() => { setPaying(false); setDone(true); }, 2000);
+  };
+  if (done) return (
+    <button onClick={onPaid}
+      className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] text-white font-bold py-4 rounded-2xl text-sm transition-all">
+      <CheckCircle2 size={16} strokeWidth={2.5} /> Confirmar Fast Pass
+    </button>
+  );
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
+      <p className="font-bold text-gray-800 text-sm flex items-center gap-2">
+        <CardIcon size={15} className="text-gray-400" strokeWidth={2} /> Pago simulado
+      </p>
+      <div className="border border-gray-200 rounded-xl px-3 py-2.5 flex items-center gap-2 bg-gray-50">
+        <CardIcon size={14} className="text-gray-400" strokeWidth={2} />
+        <span className="text-sm text-gray-400 font-mono tracking-widest">**** **** **** 4242</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="border border-gray-200 rounded-xl px-3 py-2.5 bg-gray-50 text-sm text-gray-400 font-mono">12/27</div>
+        <div className="border border-gray-200 rounded-xl px-3 py-2.5 bg-gray-50 text-sm text-gray-400 font-mono">•••</div>
+      </div>
+      <button onClick={run} disabled={paying}
+        className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-bold py-3.5 rounded-2xl text-sm transition-all disabled:opacity-60">
+        {paying ? "Procesando…" : `Pagar ${fmtCOP(price)}`}
+      </button>
+    </div>
+  );
+}
+
+// ─── FAST PASS: CONFIRMED CARD ────────────────────────────────────────────────
+function FastPassConfirmed({ user, fastPass, setQr }) {
+  const slot       = getTimeSlot();
+  const accessible = getFPAccessible(fastPass.category);
+  const isAffiliate = fastPass.category !== "nonAffiliate";
+  const CAT_STYLE  = {
+    A: { bg: "bg-emerald-50", border: "border-emerald-300", text: "text-emerald-700", badge: "bg-emerald-500" },
+    B: { bg: "bg-brand-50",   border: "border-brand-300",   text: "text-brand-700",   badge: "bg-brand-500" },
+    C: { bg: "bg-purple-50",  border: "border-purple-300",  text: "text-purple-700",  badge: "bg-purple-500" },
+    nonAffiliate: { bg: "bg-gray-50", border: "border-gray-200", text: "text-gray-700", badge: "bg-gray-500" },
+  };
+  const s = CAT_STYLE[fastPass.category] || CAT_STYLE.nonAffiliate;
+  const seed = fastPass.price + fastPass.category.charCodeAt(0);
+
+  return (
+    <div className="px-4 py-4 space-y-3 pb-8">
+      {/* Badge */}
+      <div className="flex items-center justify-center">
+        <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold text-xs px-4 py-1.5 rounded-full">
+          <CheckCircle2 size={13} strokeWidth={2.5} /> Fast Pass Activo
+        </div>
+      </div>
+
+      {/* Category card */}
+      <div className={`${s.bg} border-2 ${s.border} rounded-2xl p-4`}>
+        <div className="flex items-center justify-between mb-2">
+          <p className={`text-xs font-semibold ${s.text} opacity-70`}>
+            {isAffiliate ? "Afiliado Colsubsidio" : "No Afiliado"}
+          </p>
+          {isAffiliate && (
+            <div className={`${s.badge} text-white text-[10px] font-black px-2.5 py-1 rounded-full`}>
+              CAT {fastPass.category}
+            </div>
+          )}
+        </div>
+        <div className="flex items-end justify-between">
+          <div>
+            <p className={`font-black text-3xl ${s.text}`}>
+              {isAffiliate ? `Categoría ${fastPass.category}` : "Sin categoría"}
+            </p>
+            <p className={`text-xs ${s.text} opacity-60 mt-0.5`}>{user.name}</p>
+          </div>
+          <p className={`font-black text-xl ${s.text}`}>{fmtCOP(fastPass.price)}</p>
+        </div>
+      </div>
+
+      {/* Time matrix */}
+      {isAffiliate && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="font-bold text-gray-800 text-sm">Acceso rápido por franja</p>
+            {slot
+              ? <span className="text-[10px] font-bold text-brand-600 bg-brand-50 px-2 py-1 rounded-lg">{slot.replace("-",":00–")}:00</span>
+              : <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-lg">Fuera de horario</span>
+            }
+          </div>
+          <div className="space-y-2">
+            {ATTRACTIONS.map(a => {
+              const Icon    = ATTR_ICON[a.id] || Waves;
+              const enabled = slot && accessible.includes(a.id);
+              return (
+                <button key={a.id} disabled={!enabled}
+                  onClick={() => enabled && setQr({
+                    title: `Fast Pass · ${a.name}`,
+                    subtitle: "Muestra en la entrada prioritaria",
+                    code: genCode("FP"),
+                  })}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all
+                    ${enabled
+                      ? "border-emerald-200 bg-emerald-50 active:scale-[0.98]"
+                      : "border-gray-100 bg-gray-50 opacity-50"}`}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                       style={{ background: a.bg }}>
+                    <Icon size={16} strokeWidth={1.8} style={{ color: a.color }} />
+                  </div>
+                  <span className={`flex-1 text-xs font-bold text-left ${enabled ? "text-emerald-800" : "text-gray-400"}`}>
+                    {a.name}
+                  </span>
+                  {enabled
+                    ? <span className="text-[9px] font-black text-emerald-600 bg-emerald-100 px-2 py-1 rounded-lg">⚡ Acceso</span>
+                    : <LockIcon size={12} className="text-gray-300" strokeWidth={2} />
+                  }
+                </button>
+              );
+            })}
+          </div>
+          {!slot && (
+            <p className="text-xs text-gray-400 text-center mt-3">
+              El Fast Pass funciona de 10:00 a 16:00
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* QR simulado */}
+      <div className="bg-white rounded-2xl border border-dashed border-brand-200 p-5 flex flex-col items-center gap-3">
+        <div className="inline-grid gap-0.5" style={{ gridTemplateColumns: "repeat(7,1fr)" }}>
+          {Array.from({ length: 49 }, (_, i) => {
+            const corners = [0,1,7,8,5,6,12,13,35,36,42,43,40,41,47,48];
+            return corners.includes(i) || ((seed * 31 + i * 17 + i * i) % 13) < 7;
+          }).map((on, i) => (
+            <div key={i} className={`w-4 h-4 rounded-[2px] ${on ? "bg-brand-900" : "bg-white"}`} />
+          ))}
+        </div>
+        <p className="text-[10px] text-gray-400 font-medium">Muestra en cada atracción prioritaria</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── FAST PASS TAB ────────────────────────────────────────────────────────────
+function FastPassTab({ user, fastPass, setFastPass, onToast }) {
+  const [step, setStep]     = useState(fastPass?.step || "intro");
+  const [cedula, setCedula] = useState(user.doc || "");
+  const [qr, setQr]         = useState(null);
+
+  useEffect(() => {
+    if (fastPass?.confirmed) setStep("confirmed");
+    else if (fastPass?.step)  setStep(fastPass.step);
+  }, [fastPass]);
+
+  const go = (s, extra = {}) => {
+    setStep(s);
+    setFastPass(p => ({ ...p, step: s, ...extra }));
+  };
+
+  const confirm = (category, price) => {
+    setFastPass({ confirmed: true, category, price, step: "confirmed" });
+    setStep("confirmed");
+    onToast("¡Fast Pass activado!", "success");
+  };
+
+  const cat = getFPCategory(cedula);
+  const CAT_COLOR = { A:"text-emerald-700", B:"text-brand-700", C:"text-purple-700" };
+  const CAT_BG    = { A:"bg-emerald-50 border-emerald-200", B:"bg-brand-50 border-brand-200", C:"bg-purple-50 border-purple-200" };
+
+  if (step === "confirmed")
+    return (
+      <>
+        <FastPassConfirmed user={user} fastPass={fastPass} setQr={setQr} />
+        {qr && <QRModal {...qr} onClose={() => setQr(null)} />}
+      </>
+    );
+
+  // ── INTRO ────────────────────────────────────────────────────────────────────
+  if (step === "intro") return (
+    <div className="px-4 py-6 space-y-4">
+      <div className="text-center">
+        <div className="w-16 h-16 bg-brand-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+          <ZapIcon size={30} className="text-brand-600" strokeWidth={1.8} />
+        </div>
+        <h2 className="text-xl font-black text-gray-900">Fast Pass Piscilago</h2>
+        <p className="text-gray-500 text-sm mt-1">Evita las filas y disfruta más</p>
+      </div>
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 text-center">
+        <p className="text-xs text-amber-700 font-medium">
+          💛 Afiliados Colsubsidio desde <strong>{fmtCOP(FAST_PASS_PRICES.A)}</strong> · No afiliados {fmtCOP(FAST_PASS_PRICES.nonAffiliate)}
+        </p>
+      </div>
+      <button onClick={() => go("affiliate-check")}
+        className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-bold py-4 rounded-2xl text-sm transition-all shadow-lg shadow-brand-200">
+        <ZapIcon size={16} strokeWidth={2.5} /> Obtener Fast Pass
+      </button>
+    </div>
+  );
+
+  // ── AFFILIATE CHECK ───────────────────────────────────────────────────────────
+  if (step === "affiliate-check") return (
+    <div className="px-4 py-6 space-y-4">
+      <div className="text-center">
+        <div className="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+          <BadgeCheck size={26} className="text-brand-600" strokeWidth={1.8} />
+        </div>
+        <h2 className="text-lg font-black text-gray-900">¿Eres afiliado a Colsubsidio?</h2>
+        <p className="text-gray-500 text-xs mt-1">Los afiliados obtienen hasta 70% de descuento</p>
+      </div>
+      <button onClick={() => go("cedula-input")}
+        className="w-full flex items-center gap-3 bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-bold py-4 px-5 rounded-2xl text-sm transition-all shadow-lg shadow-brand-200">
+        <CheckCircle2 size={18} strokeWidth={2.5} />
+        <span className="flex-1 text-left">Sí, soy afiliado Colsubsidio</span>
+        <ChevronRight size={16} strokeWidth={2.5} />
+      </button>
+      <button onClick={() => go("non-affiliate")}
+        className="w-full flex items-center gap-3 bg-white border-2 border-gray-200 hover:border-gray-300 active:scale-[0.98] text-gray-700 font-bold py-4 px-5 rounded-2xl text-sm transition-all">
+        <X size={18} strokeWidth={2.5} className="text-gray-400" />
+        <span className="flex-1 text-left">No, no soy afiliado</span>
+        <ChevronRight size={16} strokeWidth={2.5} className="text-gray-300" />
+      </button>
+    </div>
+  );
+
+  // ── CEDULA INPUT ──────────────────────────────────────────────────────────────
+  if (step === "cedula-input") return (
+    <div className="px-4 py-6 space-y-4">
+      <div className="text-center">
+        <div className="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+          <CreditCard size={26} className="text-brand-600" strokeWidth={1.8} />
+        </div>
+        <h2 className="text-lg font-black text-gray-900">Verifica tu afiliación</h2>
+        <p className="text-gray-500 text-xs mt-1">Ingresa tu cédula para asignar categoría</p>
+      </div>
+      <Field label="Número de cédula" placeholder="Ej. 1045234567" value={cedula}
+        onChange={setCedula} icon={CreditCard} type="tel" extra={{ inputMode:"numeric" }} />
+      {cat && (
+        <div className={`border-2 rounded-2xl p-4 text-center ${CAT_BG[cat]}`}>
+          <p className={`text-xs font-semibold ${CAT_COLOR[cat]} opacity-70 mb-1`}>Tu categoría asignada</p>
+          <p className={`font-black text-5xl ${CAT_COLOR[cat]}`}>CAT {cat}</p>
+          <p className={`font-black text-2xl ${CAT_COLOR[cat]} mt-1`}>{fmtCOP(FAST_PASS_PRICES[cat])}</p>
+        </div>
+      )}
+      <div className="bg-gray-50 rounded-xl px-4 py-3 text-center text-xs text-gray-400">
+        Par → Cat A · Impar &lt;50M → Cat B · Impar ≥50M → Cat C
+      </div>
+      {cat && (
+        <button onClick={() => go("affiliate-payment", { category: cat, price: FAST_PASS_PRICES[cat] })}
+          className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-bold py-4 rounded-2xl text-sm transition-all shadow-lg shadow-brand-200">
+          Continuar al pago <ChevronRight size={16} strokeWidth={2.5} />
+        </button>
+      )}
+    </div>
+  );
+
+  // ── NON-AFFILIATE PAYMENT ─────────────────────────────────────────────────────
+  if (step === "non-affiliate") return (
+    <div className="px-4 py-6 space-y-4">
+      <div className="bg-gray-50 rounded-2xl p-5 text-center border border-gray-200">
+        <p className="text-gray-500 text-xs font-medium mb-1">Fast Pass — No Afiliado</p>
+        <p className="font-black text-4xl text-gray-900">{fmtCOP(FAST_PASS_PRICES.nonAffiliate)}</p>
+        <p className="text-xs text-gray-400 mt-1">Acceso prioritario todo el día</p>
+      </div>
+      <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+        <p className="text-xs text-amber-700 font-medium text-center">
+          💡 Afíliate a Colsubsidio y ahorra hasta 70%
+        </p>
+      </div>
+      <PaymentSim price={FAST_PASS_PRICES.nonAffiliate} onPaid={() => confirm("nonAffiliate", FAST_PASS_PRICES.nonAffiliate)} />
+    </div>
+  );
+
+  // ── AFFILIATE PAYMENT ─────────────────────────────────────────────────────────
+  if (step === "affiliate-payment") {
+    const { category, price } = fastPass || {};
+    return (
+      <div className="px-4 py-6 space-y-4">
+        <div className="bg-brand-900 rounded-2xl p-5 text-center relative overflow-hidden">
+          <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full bg-brand-700 opacity-40" />
+          <p className="text-brand-300 text-xs font-medium mb-1">Categoría {category} · Afiliado</p>
+          <p className="text-white font-black text-4xl relative">{fmtCOP(price)}</p>
+        </div>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-2">
+          <p className="font-bold text-gray-800 text-sm mb-3">Resumen del pedido</p>
+          {[
+            ["Titular", user.name],
+            ["Categoría", `CAT ${category}`],
+            ["Tipo", "Fast Pass · Todo el día"],
+          ].map(([k, v]) => (
+            <div key={k} className="flex justify-between text-sm">
+              <span className="text-gray-400 font-medium">{k}</span>
+              <span className="text-gray-900 font-bold">{v}</span>
+            </div>
+          ))}
+          <div className="border-t border-dashed border-gray-200 pt-2 flex justify-between">
+            <span className="font-black text-gray-900">Total</span>
+            <span className="font-black text-brand-700 text-base">{fmtCOP(price)}</span>
+          </div>
+        </div>
+        <PaymentSim price={price} onPaid={() => confirm(category, price)} />
+      </div>
+    );
+  }
+
+  return null;
+}
+
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
-function Dashboard({ user, reservations, onReserve, onLogout, fastPass, setFastPass, onToast }) {
+function Dashboard({ user, reservations, onReserve, onLogout, fastPass, setFastPass, onToast, showFPPopup, onDismissPopup }) {
   const [activeTab, setActiveTab] = useState("atracciones");
 
   return (
@@ -553,10 +918,20 @@ function Dashboard({ user, reservations, onReserve, onLogout, fastPass, setFastP
           )}
           {activeTab === "mapa"     && <TabPlaceholder icon={Map}             label="Mapa" />}
           {activeTab === "comida"   && <TabPlaceholder icon={UtensilsCrossed} label="Comida" />}
-          {activeTab === "fastpass" && <TabPlaceholder icon={ZapIcon}         label="Fast Pass" />}
+          {activeTab === "fastpass" && (
+            <FastPassTab user={user} fastPass={fastPass} setFastPass={setFastPass} onToast={onToast} />
+          )}
         </div>
         <BottomNav active={activeTab} onSelect={setActiveTab} />
       </div>
+
+      {showFPPopup && !fastPass?.confirmed && (
+        <FastPassPopup
+          userName={user.name}
+          onActivate={() => { onDismissPopup(); setActiveTab("fastpass"); }}
+          onDismiss={onDismissPopup}
+        />
+      )}
     </div>
   );
 }
@@ -848,17 +1223,19 @@ export default function App() {
 
   const [reservations, setReservations] = useState([]);
   const [fastPass, setFastPass]         = useState(null);
+  const [showFPPopup, setShowFPPopup]   = useState(false);
 
   const handleVerified = (userData) => {
     setUser(userData);
     setScreen("dashboard");
     showToast(`¡Bienvenido, ${userData.name.split(" ")[0]}!`, "success");
+    setTimeout(() => setShowFPPopup(true), 1000);
   };
 
   const handleLogout = () => {
     setUser(null); setPendingUser(null);
     setReservations([]); setFastPass(null);
-    setScreen("login");
+    setShowFPPopup(false); setScreen("login");
   };
 
   const handleReserve = (attr) => {
@@ -901,6 +1278,8 @@ export default function App() {
               fastPass={fastPass}
               setFastPass={setFastPass}
               onToast={showToast}
+              showFPPopup={showFPPopup}
+              onDismissPopup={() => setShowFPPopup(false)}
             />
           )}
         </div>
