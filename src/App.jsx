@@ -9,7 +9,8 @@ import {
   MessageCircle, Send,
   MapPin, HelpCircle, ArrowLeft, Minus, Plus, ShoppingCart,
   ZoomIn, ZoomOut, Timer, Utensils, Toilet,
-  UserCircle2
+  UserCircle2,
+  Heart, Tent, PawPrint, Package, Info, Car, Shirt, Flame,
 } from "lucide-react";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
@@ -19,20 +20,22 @@ const VERIFY_CODE = "123456";
 const FAST_PASS_PRICES = { nonAffiliate: 120000, A: 35000, B: 55000, C: 85000 };
 
 const ATTRACTIONS = [
-  { id: "megatobogan",   name: "Megatobogán",        icon: "megatobogan",  waitMin: 8,  waitMax: 25, time: "~3 min",  color: "#f97316", bg: "#fff7ed", minAge: 12, capacity: 6 },
-  { id: "bosque-lluvia", name: "Bosque de la Lluvia", icon: "bosque",       waitMin: 5,  waitMax: 20, time: "~15 min", color: "#16a34a", bg: "#f0fdf4", minAge:  5, capacity: 10 },
-  { id: "piscina-olas",  name: "Piscina de Olas",     icon: "piscina",      waitMin: 10, waitMax: 40, time: "~20 min", color: "#0284c7", bg: "#f0f9ff", minAge:  3, capacity:  8 },
-  { id: "tornado",       name: "El Tornado",           icon: "tornado",      waitMin: 6,  waitMax: 30, time: "~5 min",  color: "#7c3aed", bg: "#faf5ff", minAge: 14, capacity:  4 },
-  { id: "rio-lento",     name: "Río Lento",            icon: "rio",          waitMin: 2,  waitMax: 15, time: "~25 min", color: "#0891b2", bg: "#ecfeff", minAge:  5, capacity:  8 },
+  { id: "megatobogan",   name: "Megatobogán",          waitMin: 8,  waitMax: 25, time: "~3 min",  color: "#f97316", bg: "#fff7ed", minAge: 12, capacity: 6  },
+  { id: "tobogan-flash", name: "Tobogán FlashFlash",   waitMin: 10, waitMax: 35, time: "~2 min",  color: "#7c3aed", bg: "#faf5ff", minAge: 10, capacity: 4  },
+  { id: "tobogan-placi", name: "Tobogán Plagilepis",   waitMin: 6,  waitMax: 22, time: "~4 min",  color: "#be185d", bg: "#fdf2f8", minAge: 8,  capacity: 2  },
+  { id: "bosque-lluvia", name: "Bosque de la Lluvia",  waitMin: 5,  waitMax: 20, time: "~15 min", color: "#16a34a", bg: "#f0fdf4", minAge:  5, capacity: 10 },
+  { id: "piscina-olas",  name: "Piscina de Olas",      waitMin: 10, waitMax: 40, time: "~20 min", color: "#0284c7", bg: "#f0f9ff", minAge:  3, capacity:  8 },
+  { id: "tornado",       name: "El Tornado",            waitMin: 6,  waitMax: 30, time: "~5 min",  color: "#dc2626", bg: "#fef2f2", minAge: 14, capacity:  4 },
+  { id: "rio-lento",     name: "Río Lento",             waitMin: 2,  waitMax: 15, time: "~25 min", color: "#0891b2", bg: "#ecfeff", minAge:  5, capacity:  8 },
 ];
 
 const RESTAURANTS = [
   {
     id: "cascada", name: "La Cascada",  desc: "Snacks, helados y bebidas",
     items: [
-      { id: "c1", name: "Helado Artesanal",     price: 8500 },
+      { id: "c1", name: "Helado Artesanal",     price: 8500  },
       { id: "c2", name: "Empanadas (x3)",        price: 11000 },
-      { id: "c3", name: "Jugo Natural Grande",   price: 9000 },
+      { id: "c3", name: "Jugo Natural Grande",   price: 9000  },
       { id: "c4", name: "Malteada Tropical",     price: 13500 },
     ],
   },
@@ -50,15 +53,39 @@ const RESTAURANTS = [
     items: [
       { id: "p1", name: "Pizza Pepperoni",       price: 24000 },
       { id: "p2", name: "Pasta Bolognesa",       price: 19000 },
-      { id: "p3", name: "Pan de Ajo",            price: 7500 },
+      { id: "p3", name: "Pan de Ajo",            price: 7500  },
+    ],
+  },
+  {
+    id: "mirador", name: "Restaurante Mirador", desc: "Vista panorámica y platos típicos",
+    items: [
+      { id: "m1", name: "Trucha Amazónica",      price: 32000 },
+      { id: "m2", name: "Sancocho de Gallina",   price: 22000 },
+      { id: "m3", name: "Limonada de Coco",      price: 9500  },
+    ],
+  },
+  {
+    id: "piscilago-rest", name: "Restaurant Piscilago", desc: "Comida rápida y bebidas frías",
+    items: [
+      { id: "ps1", name: "Perro Caliente",       price: 12000 },
+      { id: "ps2", name: "Papas Fritas",         price: 8000  },
+      { id: "ps3", name: "Agua + Snack Combo",   price: 7000  },
+    ],
+  },
+  {
+    id: "kiosco-a", name: "Kiosco Comidas Rápidas", desc: "Snacks y bebidas al paso",
+    items: [
+      { id: "k1", name: "Cocada",                price: 4000  },
+      { id: "k2", name: "Agua Mineral 500ml",    price: 3500  },
+      { id: "k3", name: "Chontaduro con Sal",    price: 5000  },
     ],
   },
 ];
 
 const FP_MATRIX = {
-  "10-12": { megatobogan: "A", tornado: "A", "bosque-lluvia": "B", "rio-lento": "B", "piscina-olas": "C" },
-  "12-14": { megatobogan: "B", tornado: "B", "bosque-lluvia": "C", "rio-lento": "C", "piscina-olas": "A" },
-  "14-16": { megatobogan: "C", tornado: "C", "bosque-lluvia": "A", "rio-lento": "A", "piscina-olas": "B" },
+  "10-12": { megatobogan: "A", tornado: "A", "tobogan-flash": "A", "bosque-lluvia": "B", "rio-lento": "B", "piscina-olas": "C", "tobogan-placi": "C" },
+  "12-14": { megatobogan: "B", tornado: "B", "tobogan-flash": "B", "bosque-lluvia": "C", "rio-lento": "C", "piscina-olas": "A", "tobogan-placi": "A" },
+  "14-16": { megatobogan: "C", tornado: "C", "tobogan-flash": "C", "bosque-lluvia": "A", "rio-lento": "A", "piscina-olas": "B", "tobogan-placi": "B" },
 };
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
@@ -1021,22 +1048,60 @@ function FastPassTab({ user, fastPass, setFastPass, onToast }) {
 }
 
 // ─── MAP DATA ─────────────────────────────────────────────────────────────────
+// r=reservable, d=description, hq=hasQueue
 const MAP_PINS = [
-  { id:"entrada",  label:"Entrada / Taquilla",   type:"entrance",   x:12, y:78, Icon:MapPin,          color:"#f59e0b", attrId:null,            restId:null },
-  { id:"megatob",  label:"Megatobogán",           type:"attraction", x:22, y:28, Icon:Waves,           color:"#1d4ed8", attrId:"megatobogan",   restId:null },
-  { id:"bosque",   label:"Bosque de la Lluvia",   type:"attraction", x:62, y:20, Icon:TreePine,        color:"#16a34a", attrId:"bosque-lluvia", restId:null },
-  { id:"piscola",  label:"Piscina de Olas",       type:"attraction", x:72, y:54, Icon:Droplets,        color:"#0284c7", attrId:"piscina-olas",  restId:null },
-  { id:"tornado",  label:"El Tornado",            type:"attraction", x:40, y:58, Icon:Tornado,         color:"#7c3aed", attrId:"tornado",       restId:null },
-  { id:"riolento", label:"Río Lento",             type:"attraction", x:18, y:62, Icon:Navigation,      color:"#0891b2", attrId:"rio-lento",     restId:null },
-  { id:"cascada",  label:"La Cascada",            type:"food",       x:50, y:38, Icon:UtensilsCrossed, color:"#ea580c", attrId:null,            restId:"cascada" },
-  { id:"rancho",   label:"El Rancho",             type:"food",       x:32, y:72, Icon:UtensilsCrossed, color:"#b45309", attrId:null,            restId:"rancho" },
-  { id:"pizza",    label:"PizzaLago",             type:"food",       x:80, y:32, Icon:UtensilsCrossed, color:"#dc2626", attrId:null,            restId:"pizzalago" },
-  { id:"baño1",    label:"Servicios / Baños",     type:"restroom",   x:55, y:65, Icon:Users,           color:"#6b7280", attrId:null,            restId:null },
-  { id:"ayuda",    label:"Punto de Ayuda",        type:"help",       x:30, y:44, Icon:HelpCircle,      color:"#2563eb", attrId:null,            restId:null },
+  // ── 7 RESERVABLE ATTRACTIONS ──────────────────────────────────────────────
+  { id:"megatob",    label:"Megatobogán",           type:"attraction",   x:24, y:63, Icon:Waves,          color:"#f97316", attrId:"megatobogan",   restId:null,          reservable:true,  hasQueue:false, desc:"Tobogán de alta velocidad con caída de 18 metros. Edad mínima 12 años." },
+  { id:"t-flash",    label:"Tobogán FlashFlash",    type:"attraction",   x:34, y:67, Icon:Flame,          color:"#7c3aed", attrId:"tobogan-flash",  restId:null,          reservable:true,  hasQueue:false, desc:"El tobogán más rápido del parque. Curvas cerradas y adrenalina total. +10 años." },
+  { id:"t-placi",    label:"Tobogán Plagilepis",    type:"attraction",   x:18, y:68, Icon:Wind,           color:"#be185d", attrId:"tobogan-placi",  restId:null,          reservable:true,  hasQueue:false, desc:"Tobogán doble espiral familiar. Se disfruta en pareja o en duo. +8 años." },
+  { id:"bosque",     label:"Bosque de la Lluvia",   type:"attraction",   x:14, y:45, Icon:TreePine,       color:"#16a34a", attrId:"bosque-lluvia",  restId:null,          reservable:true,  hasQueue:false, desc:"Área acuática con duchas tropicales, toboganes infantiles y zona de juegos. +5 años." },
+  { id:"piscola",    label:"Piscina de Olas",       type:"attraction",   x:52, y:55, Icon:Droplets,       color:"#0284c7", attrId:"piscina-olas",   restId:null,          reservable:true,  hasQueue:false, desc:"La icónica piscina de olas artificiales de Piscilago. Oleaje cada 20 min. +3 años." },
+  { id:"tornado",    label:"El Tornado",            type:"attraction",   x:40, y:58, Icon:Tornado,        color:"#dc2626", attrId:"tornado",         restId:null,          reservable:true,  hasQueue:false, desc:"Tobogán en embudo gigante. Sensación de gravedad cero. Máxima intensidad. +14 años." },
+  { id:"riolento",   label:"Río Lento",             type:"attraction",   x:28, y:50, Icon:Navigation,     color:"#0891b2", attrId:"rio-lento",      restId:null,          reservable:true,  hasQueue:false, desc:"Recorrido relajante de 400 m en llantas por el río del parque. Toda la familia." },
+
+  // ── FOOD / RESTAURANTES (6) ───────────────────────────────────────────────
+  { id:"cascada",    label:"La Cascada",            type:"food",         x:46, y:38, Icon:UtensilsCrossed,color:"#ea580c", attrId:null,              restId:"cascada",     reservable:false, hasQueue:false, desc:"Snacks, helados y bebidas tropicales." },
+  { id:"rancho",     label:"El Rancho",             type:"food",         x:30, y:76, Icon:UtensilsCrossed,color:"#b45309", attrId:null,              restId:"rancho",      reservable:false, hasQueue:false, desc:"Parrilla y carnes a la brasa estilo colombiano." },
+  { id:"pizza",      label:"PizzaLago",             type:"food",         x:58, y:30, Icon:UtensilsCrossed,color:"#dc2626", attrId:null,              restId:"pizzalago",   reservable:false, hasQueue:false, desc:"Pizzas artesanales y pastas frescas." },
+  { id:"mirador-r",  label:"Restaurante Mirador",  type:"food",         x:62, y:48, Icon:UtensilsCrossed,color:"#92400e", attrId:null,              restId:"mirador",     reservable:false, hasQueue:false, desc:"Vista panorámica y platos típicos colombianos." },
+  { id:"pisc-rest",  label:"Restaurant Piscilago", type:"food",         x:48, y:70, Icon:UtensilsCrossed,color:"#0369a1", attrId:null,              restId:"piscilago-rest",reservable:false,hasQueue:false, desc:"Comida rápida y bebidas frías junto a las piscinas." },
+  { id:"kiosco",     label:"Kiosco Comidas",        type:"food",         x:22, y:40, Icon:UtensilsCrossed,color:"#65a30d", attrId:null,              restId:"kiosco-a",    reservable:false, hasQueue:false, desc:"Snacks y bebidas al paso." },
+
+  // ── SERVICIOS / BAÑOS (7) ─────────────────────────────────────────────────
+  { id:"baño-a",     label:"Servicios / Baños A",  type:"restroom",     x:20, y:55, Icon:Users,          color:"#6b7280", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Baños y duchas con agua caliente. Acceso libre." },
+  { id:"baño-b",     label:"Servicios / Baños B",  type:"restroom",     x:46, y:64, Icon:Users,          color:"#6b7280", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Baños y duchas. Zona central del parque." },
+  { id:"baño-c",     label:"Servicios / Baños C",  type:"restroom",     x:58, y:40, Icon:Users,          color:"#6b7280", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Baños y cambiadores. Zona atracciones principales." },
+  { id:"vestuario",  label:"Vestuarios y Casilleros",type:"service",     x:10, y:68, Icon:Shirt,         color:"#4f46e5", attrId:null,              restId:null,          reservable:false, hasQueue:true,  waitMin:2, waitMax:12, desc:"Cambiadores, duchas privadas y alquiler de casilleros ($8.000/día)." },
+  { id:"prim-aux",   label:"Primeros Auxilios",    type:"help",         x:35, y:42, Icon:Heart,          color:"#e11d48", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Enfermería con médico en turno permanente. Servicio gratuito para todos los visitantes." },
+  { id:"salvaвид",   label:"Alquiler Salvavidas",  type:"service",      x:54, y:48, Icon:ShieldCheck,    color:"#2563eb", attrId:null,              restId:null,          reservable:false, hasQueue:true,  waitMin:1, waitMax:8,  desc:"Alquiler de salvavidas, flotadores y material acuático. ($5.000/ítem)." },
+  { id:"cajero",     label:"Cajero Automático",    type:"service",      x:12, y:80, Icon:CardIcon,       color:"#374151", attrId:null,              restId:null,          reservable:false, hasQueue:true,  waitMin:0, waitMax:5,  desc:"Cajero electrónico disponible 24 hrs. Redes Bancolombia, Davivienda y Aval." },
+
+  // ── CONSERVACIÓN / ANIMALES (5) ───────────────────────────────────────────
+  { id:"venaditos",  label:"Venaditos",             type:"conservation", x:64, y:22, Icon:PawPrint,       color:"#92400e", attrId:null,              restId:null,          reservable:false, hasQueue:true,  waitMin:3, waitMax:15, desc:"Área de interacción con venaditos cola blanca. Puedes alimentarlos con supervisión." },
+  { id:"leones",     label:"Leones Marinos",        type:"conservation", x:72, y:33, Icon:PawPrint,       color:"#0369a1", attrId:null,              restId:null,          reservable:false, hasQueue:true,  waitMin:5, waitMax:20, desc:"Show de leones marinos. Funciones a las 11am, 2pm y 4pm. Aforo limitado." },
+  { id:"tortugas",   label:"Tortugas",              type:"conservation", x:68, y:40, Icon:PawPrint,       color:"#15803d", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Estanque de tortugas acuáticas y terrestres. Observación libre sin contacto directo." },
+  { id:"aves",       label:"Área de Aves Exóticas", type:"conservation", x:60, y:15, Icon:PawPrint,       color:"#7e22ce", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Aviario con más de 20 especies de aves colombianas. Recorrido guiado incluido." },
+  { id:"cocodrilo",  label:"Crocodrilo",            type:"conservation", x:70, y:38, Icon:PawPrint,       color:"#166534", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Exhibición de caimanes y cocodrilos. Observación desde pasarela de seguridad." },
+
+  // ── INFORMACIÓN / ENTRADA (3) ─────────────────────────────────────────────
+  { id:"entrada",    label:"Entrada / Taquilla",    type:"entrance",     x:8,  y:75, Icon:MapPin,         color:"#f59e0b", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Taquilla principal. Horario: 8am – 6pm. Presenta tu tiquete digital o físico." },
+  { id:"info",       label:"Punto de Información",  type:"info",         x:32, y:40, Icon:Info,           color:"#2563eb", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Información del parque, mapas impresos, atención al visitante y servicio al cliente." },
+  { id:"ayuda-b",    label:"Punto de Ayuda",        type:"help",         x:56, y:58, Icon:HelpCircle,     color:"#16a34a", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Punto de encuentro y ayuda al visitante. Personal bilingüe disponible." },
+
+  // ── OCIO / OTROS (7) ─────────────────────────────────────────────────────
+  { id:"camping",    label:"Zona Camping",          type:"leisure",      x:68, y:52, Icon:Tent,           color:"#78716c", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Zona de camping y picnic familiar. Mesas y zonas verdes disponibles todo el día." },
+  { id:"canchas",    label:"Canchas Múltiples",     type:"leisure",      x:64, y:60, Icon:Zap,            color:"#f59e0b", attrId:null,              restId:null,          reservable:false, hasQueue:true,  waitMin:5, waitMax:25, desc:"Canchas de vóley playa, micro-fútbol y zona de juegos colectivos." },
+  { id:"souvenir",   label:"Tienda Souvenir",       type:"service",      x:14, y:73, Icon:Package,        color:"#9333ea", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Recuerdos, camisetas, toallas y artículos de Piscilago. Pago con tarjeta o efectivo." },
+  { id:"parqueo",    label:"Parqueadero",           type:"service",      x:4,  y:85, Icon:Car,            color:"#374151", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Parqueadero vigilado. Motos: $5.000 · Carros: $12.000 · Buses: $25.000." },
+  { id:"conf",       label:"Sala de Conferencias",  type:"info",         x:24, y:33, Icon:Users,          color:"#6366f1", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Salón de eventos disponible para grupos. Capacidad 80 personas. Reserva previa." },
+  { id:"locker-b",   label:"Lockers Zona B",        type:"service",      x:42, y:48, Icon:Shirt,          color:"#64748b", attrId:null,              restId:null,          reservable:false, hasQueue:true,  waitMin:0, waitMax:6,  desc:"Casilleros digitales zona piscinas. Seguridad garantizada. ($8.000/día)." },
+  { id:"kiosco-b",   label:"Kiosco Helados",        type:"food",         x:38, y:72, Icon:UtensilsCrossed,color:"#ec4899", attrId:null,              restId:"cascada",     reservable:false, hasQueue:true,  waitMin:1, waitMax:10, desc:"Kiosco especializado en helados artesanales y paletas tropicales." },
 ];
 
 const TYPE_LABEL = {
-  entrance:"Entrada", attraction:"Atracción", food:"Restaurante", restroom:"Servicios", help:"Ayuda",
+  entrance:"Entrada", attraction:"Atracción", food:"Restaurante",
+  restroom:"Servicios", help:"Ayuda", service:"Servicio",
+  conservation:"Conservación", leisure:"Ocio", info:"Información",
 };
 
 const MAP_TIME_SLOTS = [
@@ -1044,6 +1109,123 @@ const MAP_TIME_SLOTS = [
   { id:"12-14", label:"12:00 – 14:00 hs" },
   { id:"14-16", label:"14:00 – 16:00 hs" },
 ];
+
+// ─── WAIT TIMES HOOK ─────────────────────────────────────────────────────────
+function useWaitTimes() {
+  const queuePins = MAP_PINS.filter(p => p.hasQueue);
+  const gen = () => Object.fromEntries(
+    queuePins.map(p => [p.id, {
+      queue: Math.floor(Math.random() * ((p.waitMax ?? 20) - (p.waitMin ?? 1) + 1)) + (p.waitMin ?? 1),
+      wait:  Math.floor(Math.random() * ((p.waitMax ?? 20) - (p.waitMin ?? 1) + 1)) + (p.waitMin ?? 1),
+    }])
+  );
+  const [times, setTimes] = useState(gen);
+  useEffect(() => {
+    const id = setInterval(() => setTimes(gen()), 30000);
+    return () => clearInterval(id);
+  }, []);
+  return times;
+}
+
+// ─── MAP WAIT MODAL ───────────────────────────────────────────────────────────
+function MapWaitModal({ pin, waitData, onClose }) {
+  const { Icon } = pin;
+  return (
+    <div className="fixed inset-0 bg-black/60 z-40 flex items-end animate-fade-in" onClick={onClose}>
+      <div className="bg-white w-full rounded-t-3xl shadow-2xl animate-slide-up"
+           onClick={e => e.stopPropagation()}>
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 bg-gray-200 rounded-full" />
+        </div>
+        <div className="px-5 pt-3 pb-7">
+          {/* Header */}
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+                 style={{ background: pin.color + "22" }}>
+              <Icon size={22} style={{ color: pin.color }} strokeWidth={1.8} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-black text-gray-900 text-base leading-tight">{pin.label}</p>
+              <p className="text-[10px] text-gray-400 font-medium mt-0.5">{TYPE_LABEL[pin.type]}</p>
+            </div>
+            <button onClick={onClose}
+              className="w-8 h-8 rounded-xl bg-gray-100 text-gray-400 flex items-center justify-center active:scale-90">
+              <X size={15} strokeWidth={2.5} />
+            </button>
+          </div>
+
+          {/* Live queue stats */}
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 text-center">
+              <p className="text-[9px] font-black text-amber-600 tracking-widest uppercase mb-1">Personas en fila</p>
+              <p className="text-3xl font-black text-amber-700 tabular-nums">{waitData?.queue ?? "—"}</p>
+            </div>
+            <div className="bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 text-center">
+              <p className="text-[9px] font-black text-blue-600 tracking-widest uppercase mb-1">Espera estimada</p>
+              <p className="text-3xl font-black text-blue-700 tabular-nums">{waitData?.wait ?? "—"}<span className="text-sm font-semibold"> min</span></p>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 mb-4">
+            <p className="text-xs text-gray-600 font-medium leading-relaxed">{pin.desc}</p>
+          </div>
+
+          {/* Auto-refresh notice */}
+          <p className="text-center text-[10px] text-gray-400 font-medium mb-4">
+            Los tiempos se actualizan automáticamente cada 30 segundos
+          </p>
+
+          <button onClick={onClose}
+            className="w-full bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-bold py-4 rounded-2xl text-sm transition-all shadow-lg shadow-brand-200">
+            Entendido
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── MAP INFO MODAL ───────────────────────────────────────────────────────────
+function MapInfoModal({ pin, onClose }) {
+  const { Icon } = pin;
+  return (
+    <div className="fixed inset-0 bg-black/60 z-40 flex items-end animate-fade-in" onClick={onClose}>
+      <div className="bg-white w-full rounded-t-3xl shadow-2xl animate-slide-up"
+           onClick={e => e.stopPropagation()}>
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 bg-gray-200 rounded-full" />
+        </div>
+        <div className="px-5 pt-3 pb-7">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+                 style={{ background: pin.color + "22" }}>
+              <Icon size={22} style={{ color: pin.color }} strokeWidth={1.8} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-black text-gray-900 text-base leading-tight">{pin.label}</p>
+              <p className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block mt-1"
+                 style={{ background: pin.color + "22", color: pin.color }}>
+                {TYPE_LABEL[pin.type]}
+              </p>
+            </div>
+            <button onClick={onClose}
+              className="w-8 h-8 rounded-xl bg-gray-100 text-gray-400 flex items-center justify-center active:scale-90">
+              <X size={15} strokeWidth={2.5} />
+            </button>
+          </div>
+          <div className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-4 mb-5">
+            <p className="text-sm text-gray-700 font-medium leading-relaxed">{pin.desc}</p>
+          </div>
+          <button onClick={onClose}
+            className="w-full bg-gray-900 hover:bg-gray-800 active:scale-[0.98] text-white font-bold py-4 rounded-2xl text-sm transition-all">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── COOLDOWN MINI TIMER ──────────────────────────────────────────────────────
 function CooldownMini({ cooldownUntil }) {
@@ -1863,13 +2045,14 @@ const SCALE_MIN = 0.8;
 const SCALE_MAX = 4;
 
 function MapTab({ user, companions, userCooldown, onGroupReserve }) {
-  const [scale, setScale]     = useState(1);
-  const [offset, setOffset]   = useState({ x: 0, y: 0 });
-  const [imgOk, setImgOk]     = useState(true);
-  const [filter, setFilter]   = useState("all");
-  const [selected, setSelected] = useState(null);
-  const [modal, setModal]       = useState(null);
+  const [scale, setScale]         = useState(1);
+  const [offset, setOffset]       = useState({ x: 0, y: 0 });
+  const [imgOk, setImgOk]         = useState(true);
+  const [filter, setFilter]       = useState("all");
+  const [selected, setSelected]   = useState(null);
+  const [modal, setModal]         = useState(null);  // "book"|"menu"|"wait"|"info"
   const [redemption, setRedemption] = useState(null);
+  const waitTimes = useWaitTimes();
 
   const dragging = useRef(false);
   const lastPos  = useRef({ x: 0, y: 0 });
@@ -1901,15 +2084,19 @@ function MapTab({ user, companions, userCooldown, onGroupReserve }) {
   }, []);
 
   const FILTERS = [
-    { id:"all", label:"Todo" },
-    { id:"attraction", label:"Atracciones" },
-    { id:"food", label:"Comida" },
-    { id:"restroom", label:"Servicios" },
+    { id:"all",          label:"Todo"         },
+    { id:"attraction",   label:"Atracciones"  },
+    { id:"food",         label:"Comida"       },
+    { id:"conservation", label:"Conservación" },
+    { id:"service",      label:"Servicios"    },
   ];
 
-  const visible = MAP_PINS.filter(
-    p => filter === "all" || p.type === filter || p.type === "entrance"
-  );
+  const visible = MAP_PINS.filter(p => {
+    if (filter === "all")        return true;
+    if (p.type === "entrance")   return true;
+    if (filter === "service")    return ["service","restroom","help","info","leisure"].includes(p.type);
+    return p.type === filter;
+  });
 
   const handleConfirm = (data) => {
     setModal(null);
@@ -2031,33 +2218,55 @@ function MapTab({ user, companions, userCooldown, onGroupReserve }) {
 
         {/* Pin info card — bottom overlay */}
         {selected && (
-          <div className="absolute bottom-3 left-3 right-14 bg-white rounded-xl shadow-xl border border-gray-100 px-3 py-2.5 flex items-center gap-2.5 animate-fade-in z-20">
+          <div className="absolute bottom-3 left-3 right-14 bg-white rounded-2xl shadow-xl border border-gray-100 px-3 py-2.5 flex items-center gap-2.5 animate-fade-in z-20">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
                  style={{ background: selected.color + "22" }}>
               <selected.Icon size={17} style={{ color: selected.color }} strokeWidth={2} />
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-gray-900 text-xs truncate">{selected.label}</p>
-              <p className="text-[10px] text-gray-400 font-medium">{TYPE_LABEL[selected.type]}</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <p className="text-[10px] text-gray-400 font-medium">{TYPE_LABEL[selected.type]}</p>
+                {selected.reservable && (
+                  <span className="text-[9px] font-black text-brand-600 bg-brand-50 px-1.5 py-0.5 rounded-full">RESERVABLE</span>
+                )}
+                {selected.hasQueue && waitTimes[selected.id] && (
+                  <span className="text-[9px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
+                    {waitTimes[selected.id].wait} min
+                  </span>
+                )}
+              </div>
             </div>
-            {selected.type === "attraction" && (
-              <button
-                onPointerDown={e => e.stopPropagation()}
+            {/* CTA based on pin type */}
+            {selected.type === "attraction" && selected.reservable && (
+              <button onPointerDown={e => e.stopPropagation()}
                 onClick={e => { e.stopPropagation(); setModal("book"); }}
                 className="flex-shrink-0 bg-brand-600 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg active:scale-95 transition-all">
                 Reservar
               </button>
             )}
-            {selected.type === "food" && (
-              <button
-                onPointerDown={e => e.stopPropagation()}
+            {selected.type === "food" && selected.restId && (
+              <button onPointerDown={e => e.stopPropagation()}
                 onClick={e => { e.stopPropagation(); setModal("menu"); }}
                 className="flex-shrink-0 bg-orange-500 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg active:scale-95 transition-all">
                 Ver Menú
               </button>
             )}
-            <button
-              onPointerDown={e => e.stopPropagation()}
+            {selected.hasQueue && !selected.reservable && (
+              <button onPointerDown={e => e.stopPropagation()}
+                onClick={e => { e.stopPropagation(); setModal("wait"); }}
+                className="flex-shrink-0 bg-amber-500 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg active:scale-95 transition-all">
+                Ver Fila
+              </button>
+            )}
+            {!selected.reservable && !selected.hasQueue && selected.type !== "food" && (
+              <button onPointerDown={e => e.stopPropagation()}
+                onClick={e => { e.stopPropagation(); setModal("info"); }}
+                className="flex-shrink-0 bg-gray-800 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg active:scale-95 transition-all">
+                Info
+              </button>
+            )}
+            <button onPointerDown={e => e.stopPropagation()}
               onClick={e => { e.stopPropagation(); setSelected(null); }}
               className="text-gray-400 flex-shrink-0">
               <X size={14} strokeWidth={2} />
@@ -2085,6 +2294,19 @@ function MapTab({ user, companions, userCooldown, onGroupReserve }) {
         <MapMenuModal
           pin={selected}
           onConfirm={handleConfirm}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {modal === "wait" && selected && (
+        <MapWaitModal
+          pin={selected}
+          waitData={waitTimes[selected.id]}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {modal === "info" && selected && (
+        <MapInfoModal
+          pin={selected}
           onClose={() => setModal(null)}
         />
       )}
