@@ -1045,9 +1045,65 @@ const MAP_TIME_SLOTS = [
   { id:"14-16", label:"14:00 – 16:00 hs" },
 ];
 
+// ─── COOLDOWN MINI TIMER ──────────────────────────────────────────────────────
+function CooldownMini({ cooldownUntil }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 10000);
+    return () => clearInterval(id);
+  }, []);
+  const minsLeft = Math.max(0, Math.ceil((cooldownUntil - now) / 60000));
+  return (
+    <span className="text-[10px] font-bold text-amber-600 tabular-nums">
+      {minsLeft > 0 ? `${minsLeft} min` : "Listo"}
+    </span>
+  );
+}
+
+// ─── CAPACITY VISUALIZER ──────────────────────────────────────────────────────
+function CapacityBar({ capacity, selected, color }) {
+  const overflow   = Math.max(0, selected - capacity);
+  const filled     = Math.min(selected, capacity);
+  const turnsNeeded = overflow > 0 ? Math.ceil(selected / capacity) : 1;
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-1 flex-wrap">
+        {Array.from({ length: capacity }).map((_, i) => (
+          <div
+            key={i}
+            className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200"
+            style={{
+              background: i < filled ? color + "dd" : "#f3f4f6",
+              border: `2px solid ${i < filled ? color : "#e5e7eb"}`,
+            }}
+          >
+            {i < filled ? (
+              <User size={12} strokeWidth={2.5} className="text-white" />
+            ) : (
+              <div className="w-3 h-3 rounded-sm border border-gray-300" />
+            )}
+          </div>
+        ))}
+        {overflow > 0 && (
+          <div className="h-7 px-2 rounded-lg bg-amber-100 border-2 border-amber-300 flex items-center justify-center">
+            <span className="text-[10px] font-black text-amber-700">+{overflow}</span>
+          </div>
+        )}
+      </div>
+      {turnsNeeded > 1 && (
+        <p className="text-[10px] font-semibold text-amber-600 flex items-center gap-1">
+          <ZapIcon size={9} strokeWidth={2.5} />
+          {turnsNeeded} turnos consecutivos — tu familia irá junta en el flujo
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ─── MAP BOOKING MODAL ────────────────────────────────────────────────────────
 function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldown, onGroupReserve }) {
-  const [slot, setSlot] = useState(null);
+  const [slot,    setSlot]    = useState(null);
+  const [btnState, setBtnState] = useState("idle"); // idle | loading | done
   const attr = ATTRACTIONS.find(a => a.id === pin.attrId);
   const { Icon } = pin;
 
@@ -1064,9 +1120,11 @@ function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldo
   ];
 
   const getStatus = (p) => {
-    if (attr && p.age < attr.minAge) return { eligible: false, reason: "Edad insuficiente" };
-    if (!isCooldownFree(p.cooldownUntil))   return { eligible: false, reason: "En reposo" };
-    return { eligible: true, reason: null };
+    if (attr && p.age < attr.minAge)
+      return { eligible: false, kind: "age",     reason: `Edad mínima ${attr.minAge} años` };
+    if (!isCooldownFree(p.cooldownUntil))
+      return { eligible: false, kind: "cooldown", reason: "Tiempo frío activo" };
+    return { eligible: true, kind: null, reason: null };
   };
 
   const [selectedIds, setSelectedIds] = useState(
@@ -1081,28 +1139,35 @@ function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldo
     });
 
   const selectedCount = selectedIds.size;
-  const canConfirm    = !!slot && selectedCount > 0;
-  const needsTurns    = attr && selectedCount > attr.capacity;
+  const canConfirm    = !!slot && selectedCount > 0 && btnState === "idle";
 
   const handleConfirm = () => {
     if (!canConfirm) return;
-    const people = allPeople.filter(p => selectedIds.has(p.id));
-    let result;
-    if (onGroupReserve) {
-      result = onGroupReserve({ attr, people });
-    } else {
-      result = { ok: true, turns: [{ turnNumber: 101, people }], eligible: people, blocked: [] };
-    }
-    if (result.ok) {
-      onConfirm({ pin, slot, turns: result.turns, eligible: result.eligible, blocked: result.blocked });
-    }
+    setBtnState("loading");
+    setTimeout(() => {
+      const people = allPeople.filter(p => selectedIds.has(p.id));
+      let result;
+      if (onGroupReserve) {
+        result = onGroupReserve({ attr, people });
+      } else {
+        result = { ok: true, turns: [{ turnNumber: 101, people }], eligible: people, blocked: [] };
+      }
+      if (result.ok) {
+        setBtnState("done");
+        setTimeout(() => {
+          onConfirm({ pin, slot, turns: result.turns, eligible: result.eligible, blocked: result.blocked });
+        }, 700);
+      } else {
+        setBtnState("idle");
+      }
+    }, 900);
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-40 flex items-end animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 z-40 flex items-end animate-fade-in" onClick={onClose}>
       <div
         className="bg-white w-full rounded-t-3xl shadow-2xl animate-slide-up flex flex-col overflow-hidden"
-        style={{ maxHeight: "88vh" }}
+        style={{ maxHeight: "90vh" }}
         onClick={e => e.stopPropagation()}
       >
         {/* Handle */}
@@ -1111,30 +1176,41 @@ function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldo
         </div>
 
         {/* Header */}
-        <div className="px-5 pt-2 pb-4 flex items-center gap-3 border-b border-gray-100 flex-shrink-0">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-               style={{ background: pin.color + "22" }}>
-            <Icon size={22} style={{ color: pin.color }} strokeWidth={1.8} />
+        <div className="px-5 pt-2 pb-4 border-b border-gray-100 flex-shrink-0">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+                 style={{ background: pin.color + "22" }}>
+              <Icon size={22} style={{ color: pin.color }} strokeWidth={1.8} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-black text-gray-900 text-base leading-tight">{pin.label}</p>
+              {attr && (
+                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                  <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
+                    <Clock size={9} strokeWidth={2} /> {attr.waitMin}–{attr.waitMax} min espera
+                  </span>
+                  <span className="text-gray-200">·</span>
+                  <span className="text-[10px] text-gray-400">+{attr.minAge} años</span>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-xl bg-gray-100 text-gray-400 hover:bg-gray-200 flex items-center justify-center transition-all active:scale-90 flex-shrink-0"
+            >
+              <X size={15} strokeWidth={2.5} />
+            </button>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-black text-gray-900 text-base leading-tight">{pin.label}</p>
-            {attr && (
-              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
-                  <Clock size={9} strokeWidth={2} /> {attr.waitMin}–{attr.waitMax} min
-                </span>
-                <span className="text-gray-200 text-[10px]">·</span>
-                <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
-                  <Users size={9} strokeWidth={2} /> Cap. {attr.capacity}
-                </span>
-                <span className="text-gray-200 text-[10px]">·</span>
-                <span className="text-[10px] text-gray-400">+{attr.minAge} años</span>
-              </div>
-            )}
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 flex-shrink-0">
-            <X size={18} strokeWidth={2} />
-          </button>
+
+          {/* Capacity visualizer */}
+          {attr && (
+            <div className="bg-gray-50 rounded-2xl px-4 py-3">
+              <p className="text-[10px] font-black text-gray-400 tracking-widest uppercase mb-2">
+                Capacidad · {selectedCount}/{attr.capacity} seleccionados
+              </p>
+              <CapacityBar capacity={attr.capacity} selected={selectedCount} color={pin.color} />
+            </div>
+          )}
         </div>
 
         {/* Scrollable body */}
@@ -1142,52 +1218,78 @@ function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldo
 
           {/* ¿Quién va? */}
           <div className="px-5 pt-4 pb-3">
-            <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-3">
+            <p className="text-[10px] font-black text-gray-400 tracking-widest uppercase mb-3">
               ¿Quién va?
             </p>
             <div className="space-y-2">
               {allPeople.map(person => {
-                const { eligible, reason } = getStatus(person);
+                const { eligible, kind, reason } = getStatus(person);
                 const checked = selectedIds.has(person.id) && eligible;
                 const bg = person.isUser ? "#1d4ed8" : avatarColor(person.id);
                 return (
                   <button
                     key={person.id}
-                    disabled={!eligible}
-                    onClick={() => eligible && toggle(person.id)}
-                    className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl border-2 text-left transition-all duration-150
+                    disabled={!eligible || btnState !== "idle"}
+                    onClick={() => eligible && btnState === "idle" && toggle(person.id)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border-2 text-left transition-all duration-200
                       ${!eligible
-                        ? "border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed"
+                        ? "border-gray-100 bg-gray-50 cursor-not-allowed"
                         : checked
-                          ? "border-brand-400 bg-brand-50 active:scale-[0.99]"
-                          : "border-gray-200 bg-white hover:border-gray-300 active:scale-[0.99]"}`}
+                          ? "border-brand-400 bg-brand-50 shadow-sm shadow-brand-100 active:scale-[0.985]"
+                          : "border-gray-200 bg-white hover:border-gray-300 active:scale-[0.985]"}`}
                   >
-                    <div
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-white text-sm flex-shrink-0 shadow-sm transition-all ${!eligible ? "grayscale" : ""}`}
-                      style={{ background: bg }}
-                    >
-                      {person.avatarInitial}
+                    {/* Avatar with status overlay */}
+                    <div className="relative flex-shrink-0">
+                      <div
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-white text-sm shadow-sm transition-all
+                          ${!eligible ? "opacity-40" : ""}`}
+                        style={{ background: bg }}
+                      >
+                        {person.avatarInitial}
+                      </div>
+                      {/* Status badge overlay */}
+                      {!eligible && (
+                        <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center
+                          ${kind === "age" ? "bg-red-400" : "bg-amber-400"}`}>
+                          {kind === "age"
+                            ? <LockIcon size={9} className="text-white" strokeWidth={2.5} />
+                            : <Timer size={9} className="text-white" strokeWidth={2.5} />
+                          }
+                        </div>
+                      )}
+                      {/* Selected ring */}
+                      {checked && (
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-brand-600 border-2 border-white flex items-center justify-center">
+                          <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                            <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </div>
+                      )}
                     </div>
+
+                    {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className={`text-sm font-bold leading-tight ${!eligible ? "text-gray-400" : "text-gray-900"}`}>
-                          {person.name}{person.isUser ? " (Tú)" : ""}
-                        </p>
-                        {!eligible && reason && (
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0
-                            ${reason === "En reposo"
-                              ? "bg-amber-100 text-amber-700"
-                              : "bg-red-100 text-red-600"}`}>
+                      <p className={`text-sm font-bold leading-tight ${!eligible ? "text-gray-400" : "text-gray-900"}`}>
+                        {person.isUser ? "Tú" : person.name}
+                      </p>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <span className="text-[10px] text-gray-400 font-medium">{person.age} años</span>
+                        {!eligible && kind === "age" && (
+                          <span className="text-[10px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded-full">
                             {reason}
                           </span>
                         )}
+                        {!eligible && kind === "cooldown" && (
+                          <span className="flex items-center gap-1 bg-amber-50 px-1.5 py-0.5 rounded-full">
+                            <Timer size={8} className="text-amber-500" strokeWidth={2.5} />
+                            <CooldownMini cooldownUntil={person.cooldownUntil} />
+                          </span>
+                        )}
                       </div>
-                      <p className="text-[10px] text-gray-400 font-medium mt-0.5">
-                        {person.age} años
-                      </p>
                     </div>
-                    {/* Custom checkbox */}
-                    <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all duration-150
+
+                    {/* Circular selector */}
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200
                       ${!eligible
                         ? "border-gray-200 bg-gray-100"
                         : checked
@@ -1207,50 +1309,70 @@ function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldo
           </div>
 
           {/* Horario */}
-          <div className="px-5 pt-1 pb-3">
-            <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-3">
+          <div className="px-5 pt-1 pb-4">
+            <p className="text-[10px] font-black text-gray-400 tracking-widest uppercase mb-3">
               Selecciona un horario
             </p>
             <div className="space-y-2">
               {MAP_TIME_SLOTS.map(s => (
-                <button key={s.id} onClick={() => setSlot(s.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all
+                <button key={s.id} onClick={() => btnState === "idle" && setSlot(s.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all active:scale-[0.985]
                     ${slot === s.id
-                      ? "border-brand-500 bg-brand-50 text-brand-700"
-                      : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"}`}>
+                      ? "border-brand-500 bg-brand-50"
+                      : "border-gray-200 bg-white hover:border-gray-300"}`}>
                   <Timer size={15} strokeWidth={2}
                          className={slot === s.id ? "text-brand-500" : "text-gray-400"} />
-                  <span className="font-semibold text-sm flex-1 text-left">{s.label}</span>
-                  {slot === s.id && <CheckCircle2 size={16} className="text-brand-500" strokeWidth={2.5} />}
+                  <span className={`font-semibold text-sm flex-1 text-left ${slot === s.id ? "text-brand-700" : "text-gray-700"}`}>
+                    {s.label}
+                  </span>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all
+                    ${slot === s.id ? "bg-brand-600 border-brand-600" : "border-gray-300"}`}>
+                    {slot === s.id && (
+                      <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                        <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </div>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Turns notice */}
-          {needsTurns && (
-            <div className="mx-5 mb-3 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2.5 animate-fade-in">
-              <ZapIcon size={13} className="text-amber-500 flex-shrink-0" strokeWidth={2.5} />
-              <p className="text-xs text-amber-700 font-medium">
-                Se generarán <strong>{Math.ceil(selectedCount / attr.capacity)} turnos</strong> consecutivos para {selectedCount} personas
-              </p>
-            </div>
-          )}
-
-          {/* Confirm button */}
-          <div className="px-5 pb-7 pt-1">
+          {/* Confirm CTA */}
+          <div className="px-5 pb-8 pt-1">
             <button
               onClick={handleConfirm}
               disabled={!canConfirm}
-              className={`w-full flex items-center justify-center gap-2 font-bold py-4 rounded-2xl text-sm transition-all
-                ${canConfirm
-                  ? "bg-brand-600 hover:bg-brand-700 active:scale-[0.97] active:bg-brand-800 text-white shadow-lg shadow-brand-200"
-                  : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
+              className={`w-full flex items-center justify-center gap-2 font-black py-4 rounded-2xl text-sm transition-all duration-300
+                ${btnState === "done"
+                  ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200 scale-[1.01]"
+                  : btnState === "loading"
+                    ? "bg-brand-500 text-white shadow-lg shadow-brand-200 cursor-wait"
+                    : canConfirm
+                      ? "bg-brand-600 hover:bg-brand-700 active:scale-[0.97] active:bg-brand-800 text-white shadow-lg shadow-brand-300/50"
+                      : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
             >
-              <QrCode size={16} strokeWidth={2.5} />
-              {selectedCount > 0
-                ? `Confirmar reserva para ${selectedCount} persona${selectedCount > 1 ? "s" : ""}`
-                : "Selecciona al menos 1 persona"}
+              {btnState === "loading" && (
+                <svg className="animate-spin" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <circle cx="8" cy="8" r="6" stroke="rgba(255,255,255,0.3)" strokeWidth="2.5" />
+                  <path d="M8 2a6 6 0 0 1 6 6" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
+              )}
+              {btnState === "done" && (
+                <svg width="18" height="14" viewBox="0 0 18 14" fill="none">
+                  <path d="M1 7L6 12L17 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+              {btnState === "idle" && <QrCode size={16} strokeWidth={2.5} />}
+              <span>
+                {btnState === "loading" && "Procesando reserva…"}
+                {btnState === "done"    && "¡Reserva confirmada!"}
+                {btnState === "idle"    && (
+                  selectedCount > 0
+                    ? `Reservar para ${selectedCount} persona${selectedCount > 1 ? "s" : ""}`
+                    : "Selecciona al menos 1 persona"
+                )}
+              </span>
             </button>
           </div>
         </div>
