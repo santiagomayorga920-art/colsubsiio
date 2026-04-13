@@ -1858,7 +1858,7 @@ function MapRedemptionSheet({ data, onClose }) {
 }
 
 // ─── MAP TAB ──────────────────────────────────────────────────────────────────
-const MAP_IMG_SRC = import.meta.env.BASE_URL + "assets/mapa_real.jpg";
+const MAP_IMG_SRC = import.meta.env.BASE_URL + "assets/mapa_detallado.jpg";
 const SCALE_MIN = 0.8;
 const SCALE_MAX = 4;
 
