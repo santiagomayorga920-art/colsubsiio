@@ -89,7 +89,15 @@ const getTimeSlot = () => {
   return null;
 };
 const randWait = () => Math.floor(Math.random() * 35) + 3;
-const genCode = (prefix) => `${prefix}-${Date.now().toString(36).toUpperCase()}`;
+const genCode  = (prefix) => `${prefix}-${Date.now().toString(36).toUpperCase()}`;
+const isCooldownFree = (cooldownUntil) => !cooldownUntil || Date.now() >= cooldownUntil;
+const mkCompanion = ({ name, age }) => ({
+  id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+  name,
+  age: Number(age),
+  avatarInitial: name.trim().charAt(0).toUpperCase(),
+  cooldownUntil: null,
+});
 const getFPAccessible = (category) => {
   const slot = getTimeSlot();
   if (!slot || !category || category === "nonAffiliate") return [];
@@ -2088,6 +2096,26 @@ export default function App() {
   const [reservations, setReservations] = useState([]);
   const [fastPass, setFastPass]         = useState(null);
   const [showFPPopup, setShowFPPopup]   = useState(false);
+  const [companions, setCompanions]     = useState([]);
+  const [userCooldown, setUserCooldown] = useState(null);
+
+  const addCompanion = useCallback((data) => {
+    setCompanions(prev => [...prev, mkCompanion(data)]);
+  }, []);
+
+  const removeCompanion = useCallback((id) => {
+    setCompanions(prev => prev.filter(c => c.id !== id));
+  }, []);
+
+  const applyUserCooldown = useCallback(() => {
+    setUserCooldown(Date.now() + COOLDOWN_MS);
+  }, []);
+
+  const applyCompanionCooldown = useCallback((id) => {
+    setCompanions(prev =>
+      prev.map(c => c.id === id ? { ...c, cooldownUntil: Date.now() + COOLDOWN_MS } : c)
+    );
+  }, []);
 
   const handleVerified = (userData) => {
     setUser(userData);
@@ -2099,7 +2127,9 @@ export default function App() {
   const handleLogout = () => {
     setUser(null); setPendingUser(null);
     setReservations([]); setFastPass(null);
-    setShowFPPopup(false); setScreen("login");
+    setShowFPPopup(false);
+    setCompanions([]); setUserCooldown(null);
+    setScreen("login");
   };
 
   const handleReserve = (attr) => {
@@ -2144,6 +2174,12 @@ export default function App() {
               onToast={showToast}
               showFPPopup={showFPPopup}
               onDismissPopup={() => setShowFPPopup(false)}
+              companions={companions}
+              userCooldown={userCooldown}
+              onAddCompanion={addCompanion}
+              onRemoveCompanion={removeCompanion}
+              onApplyUserCooldown={applyUserCooldown}
+              onApplyCompanionCooldown={applyCompanionCooldown}
             />
           )}
         </div>
