@@ -1309,7 +1309,7 @@ function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldo
           </div>
 
           {/* Horario */}
-          <div className="px-5 pt-1 pb-4">
+          <div className="px-5 pt-1 pb-5">
             <p className="text-[10px] font-black text-gray-400 tracking-widest uppercase mb-3">
               Selecciona un horario
             </p>
@@ -1338,43 +1338,83 @@ function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldo
             </div>
           </div>
 
-          {/* Confirm CTA */}
-          <div className="px-5 pb-8 pt-1">
-            <button
-              onClick={handleConfirm}
-              disabled={!canConfirm}
-              className={`w-full flex items-center justify-center gap-2 font-black py-4 rounded-2xl text-sm transition-all duration-300
-                ${btnState === "done"
-                  ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200 scale-[1.01]"
-                  : btnState === "loading"
-                    ? "bg-brand-500 text-white shadow-lg shadow-brand-200 cursor-wait"
-                    : canConfirm
-                      ? "bg-brand-600 hover:bg-brand-700 active:scale-[0.97] active:bg-brand-800 text-white shadow-lg shadow-brand-300/50"
-                      : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
-            >
-              {btnState === "loading" && (
-                <svg className="animate-spin" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <circle cx="8" cy="8" r="6" stroke="rgba(255,255,255,0.3)" strokeWidth="2.5" />
-                  <path d="M8 2a6 6 0 0 1 6 6" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-                </svg>
-              )}
-              {btnState === "done" && (
-                <svg width="18" height="14" viewBox="0 0 18 14" fill="none">
-                  <path d="M1 7L6 12L17 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              )}
-              {btnState === "idle" && <QrCode size={16} strokeWidth={2.5} />}
-              <span>
-                {btnState === "loading" && "Procesando reserva…"}
-                {btnState === "done"    && "¡Reserva confirmada!"}
-                {btnState === "idle"    && (
-                  selectedCount > 0
-                    ? `Reservar para ${selectedCount} persona${selectedCount > 1 ? "s" : ""}`
-                    : "Selecciona al menos 1 persona"
-                )}
+        </div>
+
+        {/* ── Sticky footer: counter + CTA ── */}
+        <div className="flex-shrink-0 border-t border-gray-100 bg-white px-5 pt-3 pb-7 space-y-3">
+
+          {/* Counter bar */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${selectedCount > 0 ? "bg-brand-500" : "bg-gray-300"}`} />
+              <span className="text-xs font-bold text-gray-700">
+                Seleccionados:
+                <span className={`ml-1 tabular-nums ${selectedCount > 0 ? "text-brand-700" : "text-gray-400"}`}>
+                  {selectedCount}
+                </span>
               </span>
-            </button>
+            </div>
+            {attr && (
+              <span className="text-xs font-semibold text-gray-400">
+                Capacidad máx:
+                <span className="ml-1 font-black text-gray-700">{attr.capacity}</span>
+              </span>
+            )}
           </div>
+
+          {/* Turns preview chip — appears when group exceeds capacity */}
+          {attr && selectedCount > attr.capacity && (
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 animate-fade-in">
+              <ZapIcon size={11} className="text-amber-500 flex-shrink-0" strokeWidth={2.5} />
+              <p className="text-xs text-amber-700 font-semibold">
+                {Math.ceil(selectedCount / attr.capacity)} turnos consecutivos · tu familia irá junta en el flujo
+              </p>
+            </div>
+          )}
+
+          {/* Slot missing reminder */}
+          {selectedCount > 0 && !slot && btnState === "idle" && (
+            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 animate-fade-in">
+              <Timer size={11} className="text-gray-400 flex-shrink-0" strokeWidth={2} />
+              <p className="text-xs text-gray-500 font-medium">Elige un horario para continuar</p>
+            </div>
+          )}
+
+          {/* CTA button */}
+          <button
+            onClick={handleConfirm}
+            disabled={!canConfirm}
+            className={`w-full flex items-center justify-center gap-2 font-black py-4 rounded-2xl text-sm transition-all duration-300
+              ${btnState === "done"
+                ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200 scale-[1.01]"
+                : btnState === "loading"
+                  ? "bg-brand-500 text-white shadow-lg shadow-brand-200 cursor-wait"
+                  : canConfirm
+                    ? "bg-brand-600 hover:bg-brand-700 active:scale-[0.97] active:bg-brand-800 text-white shadow-lg shadow-brand-300/50"
+                    : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
+          >
+            {btnState === "loading" && (
+              <svg className="animate-spin" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="6" stroke="rgba(255,255,255,0.3)" strokeWidth="2.5" />
+                <path d="M8 2a6 6 0 0 1 6 6" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+              </svg>
+            )}
+            {btnState === "done" && (
+              <svg width="18" height="14" viewBox="0 0 18 14" fill="none">
+                <path d="M1 7L6 12L17 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+            {btnState === "idle" && <QrCode size={16} strokeWidth={2.5} />}
+            <span>
+              {btnState === "loading" && "Procesando reserva…"}
+              {btnState === "done"    && "¡Reserva confirmada!"}
+              {btnState === "idle"    && (
+                selectedCount > 0
+                  ? `Reservar para ${selectedCount} persona${selectedCount > 1 ? "s" : ""}`
+                  : "Selecciona al menos 1 persona"
+              )}
+            </span>
+          </button>
         </div>
       </div>
     </div>
