@@ -1940,127 +1940,217 @@ const AVATAR_PALETTE = ["#1d4ed8","#7c3aed","#0891b2","#16a34a","#ea580c","#dc26
 const avatarColor = (id) =>
   AVATAR_PALETTE[id.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR_PALETTE.length];
 
+/* ── CooldownBar: live progress strip for companions in cooldown ── */
+function CooldownBar({ cooldownUntil }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 10000);
+    return () => clearInterval(id);
+  }, []);
+  const total   = GROUP_COOLDOWN_MS;
+  const elapsed = now - (cooldownUntil - total);
+  const pct     = Math.min(100, Math.max(0, (elapsed / total) * 100));
+  const minsLeft = Math.ceil((cooldownUntil - now) / 60000);
+  return (
+    <div className="mt-2">
+      <div className="flex justify-between items-center mb-1">
+        <span className="text-[9px] font-bold text-amber-500 tracking-wide uppercase">Tiempo frío</span>
+        <span className="text-[9px] font-semibold text-amber-400">{minsLeft > 0 ? `${minsLeft} min` : "Listo"}</span>
+      </div>
+      <div className="h-1 rounded-full bg-amber-100 overflow-hidden">
+        <div
+          className="h-full rounded-full bg-amber-400 transition-all duration-1000"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 function ProfileTab({ user, companions, userCooldown, onAddCompanion, onRemoveCompanion }) {
-  const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm]       = useState({ name: "", dob: "" });
-  const [errs, setErrs]       = useState({});
+  const [showAdd,    setShowAdd]    = useState(false);
+  const [form,       setForm]       = useState({ name: "", dob: "" });
+  const [errs,       setErrs]       = useState({});
+  const [removingId, setRemovingId] = useState(null);
+
+  const MAX_MEMBERS = 10;
+  const canAdd = companions.length < MAX_MEMBERS;
 
   const submit = () => {
     const e = {};
-    if (!form.name.trim()) e.name = "Nombre requerido";
-    if (!form.dob)         e.dob  = "Fecha de nacimiento requerida";
-    else if (calcAge(form.dob) < 0) e.dob = "Fecha inválida";
+    const trimmed = form.name.trim();
+    if (!trimmed)            e.name = "Nombre requerido";
+    else if (trimmed.length < 2) e.name = "Mínimo 2 caracteres";
+    if (!form.dob)           e.dob  = "Fecha de nacimiento requerida";
+    else {
+      const age = calcAge(form.dob);
+      if (age === null || age < 0) e.dob = "Fecha inválida";
+      else if (age > 110)          e.dob = "Fecha inválida";
+    }
     setErrs(e);
     if (Object.keys(e).length) return;
-    onAddCompanion({ name: form.name.trim(), age: calcAge(form.dob) });
+    onAddCompanion({ name: trimmed, age: calcAge(form.dob) });
     setForm({ name: "", dob: "" });
     setErrs({});
     setShowAdd(false);
   };
 
+  const handleRemove = (id) => {
+    setRemovingId(id);
+    setTimeout(() => {
+      onRemoveCompanion(id);
+      setRemovingId(null);
+    }, 260);
+  };
+
   const closeAdd = () => { setShowAdd(false); setForm({ name:"", dob:"" }); setErrs({}); };
   const previewAge = form.dob ? calcAge(form.dob) : null;
+  const leaderFree = isCooldownFree(userCooldown);
 
   return (
     <>
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-24 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-28 space-y-4">
 
-        {/* ── Titular card ── */}
-        <div className="bg-brand-900 rounded-3xl overflow-hidden relative shadow-lg">
-          <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-brand-700 opacity-25 pointer-events-none" />
-          <div className="absolute -bottom-10 -left-6 w-28 h-28 rounded-full bg-brand-800 opacity-30 pointer-events-none" />
+        {/* ── Leader card ── */}
+        <div className="bg-gradient-to-br from-brand-900 via-brand-800 to-brand-700 rounded-3xl overflow-hidden relative shadow-xl">
+          <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/5 pointer-events-none" />
+          <div className="absolute -bottom-12 -left-8 w-32 h-32 rounded-full bg-white/5 pointer-events-none" />
           <div className="relative px-5 pt-5 pb-5 flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gold-400 flex items-center justify-center font-black text-brand-900 text-2xl flex-shrink-0 shadow-lg">
-              {user.name.charAt(0).toUpperCase()}
+            {/* Avatar ring */}
+            <div className={`p-0.5 rounded-2xl flex-shrink-0 ${leaderFree ? "bg-emerald-400" : "bg-amber-400"}`}>
+              <div className="w-[58px] h-[58px] rounded-[14px] bg-brand-900 flex items-center justify-center font-black text-white text-2xl">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white font-black text-[17px] leading-tight truncate">{user.name}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-white font-black text-[17px] leading-tight truncate">{user.name}</p>
+                <span className="text-[9px] font-black tracking-widest text-brand-300 bg-white/10 px-2 py-0.5 rounded-full uppercase flex-shrink-0">
+                  Líder
+                </span>
+              </div>
               <p className="text-brand-300 text-xs font-medium mt-0.5 truncate">{user.email}</p>
               <div className="flex flex-wrap items-center gap-1.5 mt-2">
                 <span className="bg-white/10 text-brand-200 text-[10px] font-bold px-2.5 py-1 rounded-full">
                   {user.docType} · {user.doc.slice(0,3)}···{user.doc.slice(-2)}
                 </span>
-                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
-                  isCooldownFree(userCooldown)
-                    ? "bg-emerald-500/20 text-emerald-300"
-                    : "bg-amber-400/20 text-amber-300"}`}>
-                  {isCooldownFree(userCooldown) ? "✓ Disponible" : "⏱ En espera"}
+                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 ${
+                  leaderFree
+                    ? "bg-emerald-500/25 text-emerald-300"
+                    : "bg-amber-400/25 text-amber-300"}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full inline-block ${leaderFree ? "bg-emerald-400" : "bg-amber-400"}`} />
+                  {leaderFree ? "Disponible" : "Tiempo frío"}
                 </span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* ── Mi Grupo header ── */}
-        <div className="flex items-center justify-between">
+        {/* ── Mi Familia header ── */}
+        <div className="flex items-center justify-between pt-1">
           <div>
-            <p className="font-black text-gray-900 text-[15px]">Mi Grupo</p>
+            <p className="font-black text-gray-900 text-[15px] flex items-center gap-2">
+              Mi Familia
+              <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                {companions.length}/{MAX_MEMBERS}
+              </span>
+            </p>
             <p className="text-[11px] text-gray-400 font-medium mt-0.5">
               {companions.length === 0
                 ? "Sin acompañantes registrados"
-                : `${companions.length} acompañante${companions.length !== 1 ? "s" : ""}`}
+                : `${companions.length} acompañante${companions.length !== 1 ? "s" : ""} en tu grupo`}
             </p>
           </div>
-          <button
-            onClick={() => setShowAdd(true)}
-            className="flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 active:scale-95 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl shadow-md shadow-brand-200/60 transition-all"
-          >
-            <Plus size={13} strokeWidth={2.5} /> Añadir
-          </button>
-        </div>
-
-        {/* ── Empty state ── */}
-        {companions.length === 0 && (
-          <div className="border-2 border-dashed border-gray-200 rounded-2xl px-5 py-9 flex flex-col items-center gap-3 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center">
-              <Users size={24} className="text-gray-300" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-gray-400">Agrega a tu grupo familiar</p>
-              <p className="text-[11px] text-gray-300 leading-relaxed mt-1 max-w-[220px] mx-auto">
-                Los acompañantes comparten el tiempo de espera al reservar atracciones juntos.
-              </p>
-            </div>
+          {canAdd && (
             <button
               onClick={() => setShowAdd(true)}
-              className="flex items-center gap-1.5 text-brand-600 text-xs font-bold mt-1 active:scale-95 transition-all"
+              className="flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 active:scale-95 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl shadow-md shadow-brand-200/60 transition-all"
             >
-              <Plus size={12} strokeWidth={2.5} /> Añadir primer acompañante
+              <Plus size={13} strokeWidth={2.5} /> Añadir
             </button>
+          )}
+        </div>
+
+        {/* ── Capacity reached notice ── */}
+        {!canAdd && (
+          <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 animate-fade-in">
+            <AlertCircle size={15} className="text-amber-500 flex-shrink-0" strokeWidth={2} />
+            <p className="text-xs text-amber-700 font-semibold">Capacidad máxima alcanzada (10 miembros)</p>
           </div>
         )}
 
-        {/* ── Companion list ── */}
+        {/* ── Empty state ── */}
+        {companions.length === 0 && (
+          <button
+            onClick={() => setShowAdd(true)}
+            className="w-full border-2 border-dashed border-gray-200 hover:border-brand-300 rounded-3xl px-5 py-9 flex flex-col items-center gap-3 text-center transition-all active:scale-[0.98] group"
+          >
+            <div className="w-14 h-14 rounded-2xl bg-gray-50 border border-gray-100 group-hover:bg-brand-50 group-hover:border-brand-100 flex items-center justify-center transition-all">
+              <Users size={24} className="text-gray-300 group-hover:text-brand-400 transition-colors" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-gray-400 group-hover:text-gray-600 transition-colors">
+                Agrega tu grupo familiar
+              </p>
+              <p className="text-[11px] text-gray-300 leading-relaxed mt-1 max-w-[200px] mx-auto">
+                Los acompañantes comparten tiempo de espera al reservar atracciones juntos.
+              </p>
+            </div>
+            <span className="flex items-center gap-1.5 text-brand-600 text-xs font-bold mt-1">
+              <Plus size={12} strokeWidth={2.5} /> Añadir primer acompañante
+            </span>
+          </button>
+        )}
+
+        {/* ── Companion cards ── */}
         {companions.length > 0 && (
           <div className="space-y-2.5">
             {companions.map((c, idx) => {
-              const free = isCooldownFree(c.cooldownUntil);
-              const bg   = avatarColor(c.id);
+              const free    = isCooldownFree(c.cooldownUntil);
+              const bg      = avatarColor(c.id);
+              const exiting = removingId === c.id;
               return (
                 <div
                   key={c.id}
-                  className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3.5 flex items-center gap-3.5 animate-pop-in"
-                  style={{ animationDelay: `${idx * 50}ms`, animationFillMode: "both" }}
+                  className={`bg-white rounded-2xl border shadow-sm px-4 py-3.5 flex items-start gap-3.5 transition-all
+                    ${exiting
+                      ? "animate-pop-out border-red-100"
+                      : "border-gray-100 animate-slide-in-right"}`}
+                  style={!exiting ? { animationDelay: `${idx * 40}ms`, animationFillMode: "both" } : undefined}
                 >
-                  <div
-                    className="w-11 h-11 rounded-xl flex items-center justify-center font-black text-white text-base flex-shrink-0 shadow-sm"
-                    style={{ background: bg }}
-                  >
-                    {c.avatarInitial}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-900 text-sm leading-tight truncate">{c.name}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] text-gray-400 font-medium">{c.age} años</span>
-                      <span className="text-gray-200 text-[10px]">•</span>
-                      <span className={`text-[10px] font-bold ${free ? "text-emerald-600" : "text-amber-600"}`}>
-                        {free ? "✓ Disponible" : "⏱ En espera"}
-                      </span>
+                  {/* Avatar */}
+                  <div className="relative flex-shrink-0">
+                    <div
+                      className="w-11 h-11 rounded-xl flex items-center justify-center font-black text-white text-base shadow-sm"
+                      style={{ background: bg }}
+                    >
+                      {c.avatarInitial}
                     </div>
+                    <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${free ? "bg-emerald-400" : "bg-amber-400"}`} />
                   </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-gray-900 text-sm leading-tight truncate">{c.name}</p>
+                      <span className="text-[10px] text-gray-400 font-medium flex-shrink-0">{c.age} años</span>
+                    </div>
+                    {!free && c.cooldownUntil
+                      ? <CooldownBar cooldownUntil={c.cooldownUntil} />
+                      : (
+                        <p className="text-[10px] font-semibold text-emerald-600 mt-0.5 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+                          Disponible
+                        </p>
+                      )
+                    }
+                  </div>
+
+                  {/* Remove */}
                   <button
-                    onClick={() => onRemoveCompanion(c.id)}
-                    className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-red-50 hover:text-red-400 text-gray-400 flex items-center justify-center transition-all active:scale-90 flex-shrink-0"
+                    onClick={() => handleRemove(c.id)}
+                    disabled={!!removingId}
+                    className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-red-50 hover:text-red-400 text-gray-400 flex items-center justify-center transition-all active:scale-90 flex-shrink-0 mt-0.5 disabled:opacity-40"
                   >
                     <X size={13} strokeWidth={2.5} />
                   </button>
@@ -2071,69 +2161,114 @@ function ProfileTab({ user, companions, userCooldown, onAddCompanion, onRemoveCo
         )}
       </div>
 
-      {/* ── Add companion sheet ── */}
+      {/* ── Add companion bottom sheet ── */}
       {showAdd && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 flex items-end animate-fade-in"
+          className="fixed inset-0 bg-black/60 z-40 flex items-end animate-fade-in"
           onClick={closeAdd}
         >
           <div
-            className="bg-white w-full rounded-t-3xl shadow-2xl animate-slide-up px-5 pt-2 pb-8"
+            className="bg-white w-full rounded-t-3xl shadow-2xl animate-slide-up px-5 pt-2 pb-safe"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex justify-center py-3">
+            {/* Handle */}
+            <div className="flex justify-center pt-3 pb-1">
               <div className="w-10 h-1 bg-gray-200 rounded-full" />
             </div>
-            <div className="flex items-center justify-between mb-5">
-              <p className="font-black text-gray-900 text-[17px]">Nuevo acompañante</p>
-              <button onClick={closeAdd} className="text-gray-400 hover:text-gray-600 transition-colors">
-                <X size={18} strokeWidth={2} />
+
+            {/* Sheet header */}
+            <div className="flex items-center justify-between pt-2 pb-5">
+              <div>
+                <p className="font-black text-gray-900 text-[18px]">Nuevo miembro</p>
+                <p className="text-[11px] text-gray-400 font-medium mt-0.5">
+                  {MAX_MEMBERS - companions.length} lugar{MAX_MEMBERS - companions.length !== 1 ? "es" : ""} disponible{MAX_MEMBERS - companions.length !== 1 ? "s" : ""}
+                </p>
+              </div>
+              <button
+                onClick={closeAdd}
+                className="w-8 h-8 rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 flex items-center justify-center transition-all active:scale-90"
+              >
+                <X size={16} strokeWidth={2.5} />
               </button>
             </div>
-            <div className="space-y-3.5">
-              <Field
-                label="Nombre completo"
-                placeholder="Ej. María García"
-                value={form.name}
-                onChange={v => setForm(p => ({ ...p, name: v }))}
-                error={errs.name}
-                icon={User}
-              />
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-500 tracking-wide">
+
+            <div className="space-y-3.5 pb-6">
+              {/* Name field */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-500 tracking-wide uppercase">
+                  Nombre completo
+                </label>
+                <div className={`flex items-center gap-2.5 border-2 rounded-2xl px-4 py-3.5 transition-all
+                  ${errs.name
+                    ? "border-red-300 bg-red-50"
+                    : "border-gray-100 bg-gray-50 focus-within:border-brand-400 focus-within:bg-white focus-within:shadow-sm focus-within:shadow-brand-100"}`}>
+                  <User size={15} className={`flex-shrink-0 ${errs.name ? "text-red-400" : "text-gray-400"}`} strokeWidth={2} />
+                  <input
+                    type="text"
+                    placeholder="Ej. María García"
+                    value={form.name}
+                    onChange={e => { setForm(p => ({ ...p, name: e.target.value })); setErrs(p => ({ ...p, name: undefined })); }}
+                    maxLength={60}
+                    className="flex-1 bg-transparent text-sm text-gray-900 outline-none font-medium placeholder:text-gray-300"
+                    autoFocus
+                  />
+                  {form.name.length > 0 && (
+                    <span className="text-[10px] text-gray-300 font-medium flex-shrink-0">{form.name.length}/60</span>
+                  )}
+                </div>
+                {errs.name && (
+                  <div className="flex items-center gap-1.5 animate-fade-in">
+                    <AlertCircle size={11} className="text-red-400 flex-shrink-0" />
+                    <p className="text-red-500 text-xs font-semibold">{errs.name}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* DOB field */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-500 tracking-wide uppercase">
                   Fecha de nacimiento
                 </label>
-                <div className={`flex items-center gap-2.5 border rounded-xl px-3.5 py-3 transition-all
+                <div className={`flex items-center gap-2.5 border-2 rounded-2xl px-4 py-3.5 transition-all
                   ${errs.dob
-                    ? "border-red-300 bg-red-50 ring-1 ring-red-200"
-                    : "border-gray-200 bg-gray-50 focus-within:border-brand-400 focus-within:bg-white focus-within:ring-1 focus-within:ring-brand-100"}`}>
-                  <Calendar size={15} className={errs.dob ? "text-red-400" : "text-gray-400"} strokeWidth={2} />
+                    ? "border-red-300 bg-red-50"
+                    : "border-gray-100 bg-gray-50 focus-within:border-brand-400 focus-within:bg-white focus-within:shadow-sm focus-within:shadow-brand-100"}`}>
+                  <Calendar size={15} className={`flex-shrink-0 ${errs.dob ? "text-red-400" : "text-gray-400"}`} strokeWidth={2} />
                   <input
                     type="date"
                     value={form.dob}
-                    onChange={e => setForm(p => ({ ...p, dob: e.target.value }))}
+                    onChange={e => { setForm(p => ({ ...p, dob: e.target.value })); setErrs(p => ({ ...p, dob: undefined })); }}
                     max={new Date().toISOString().split("T")[0]}
                     className="flex-1 bg-transparent text-sm text-gray-800 outline-none font-medium"
                   />
                 </div>
                 {errs.dob && (
-                  <div className="flex items-center gap-1.5">
-                    <AlertCircle size={12} className="text-red-400 flex-shrink-0" />
-                    <p className="text-red-500 text-xs font-medium">{errs.dob}</p>
+                  <div className="flex items-center gap-1.5 animate-fade-in">
+                    <AlertCircle size={11} className="text-red-400 flex-shrink-0" />
+                    <p className="text-red-500 text-xs font-semibold">{errs.dob}</p>
                   </div>
                 )}
               </div>
-              {previewAge !== null && previewAge >= 0 && (
-                <div className="flex items-center gap-2 bg-brand-50 border border-brand-100 rounded-xl px-3.5 py-2.5 animate-fade-in">
-                  <CheckCircle2 size={13} className="text-brand-500 flex-shrink-0" strokeWidth={2.5} />
-                  <p className="text-xs text-brand-700 font-semibold">{previewAge} años</p>
+
+              {/* Age preview chip */}
+              {previewAge !== null && previewAge >= 0 && previewAge <= 110 && (
+                <div className="flex items-center gap-2 bg-brand-50 border border-brand-100 rounded-2xl px-4 py-3 animate-fade-in">
+                  <CheckCircle2 size={14} className="text-brand-500 flex-shrink-0" strokeWidth={2.5} />
+                  <div>
+                    <p className="text-xs text-brand-700 font-bold">{previewAge} años</p>
+                    {previewAge < 3 && (
+                      <p className="text-[10px] text-brand-400 mt-0.5">Solo podrá acceder a áreas para bebés</p>
+                    )}
+                  </div>
                 </div>
               )}
+
+              {/* CTA */}
               <button
                 onClick={submit}
-                className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-bold py-4 rounded-2xl text-sm transition-all shadow-lg shadow-brand-200"
+                className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 active:scale-[0.97] active:bg-brand-800 text-white font-black py-4 rounded-2xl text-sm transition-all shadow-lg shadow-brand-300/40"
               >
-                <Plus size={15} strokeWidth={2.5} /> Añadir al grupo
+                <Plus size={16} strokeWidth={2.5} /> Añadir al grupo
               </button>
             </div>
           </div>
