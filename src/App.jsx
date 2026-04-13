@@ -1352,8 +1352,8 @@ function MapMenuModal({ pin, onConfirm, onClose }) {
 
 // ─── MAP REDEMPTION SHEET ────────────────────────────────────────────────────
 function MapRedemptionSheet({ data, onClose }) {
-  const { pin, slot, items, total } = data;
-  const isAttraction = !!slot;
+  const { pin, slot, items, total, turns, eligible, blocked } = data;
+  const isAttraction = !!slot || !!turns;
   const [code] = useState(() => genCode(isAttraction ? "RES" : "FD"));
   const seed   = code.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
   const cells  = Array.from({ length: 49 }, (_, i) => {
@@ -1362,89 +1362,170 @@ function MapRedemptionSheet({ data, onClose }) {
   });
   const slotLabel = MAP_TIME_SLOTS.find(s => s.id === slot)?.label;
   const { Icon } = pin;
+  const hasTurns   = turns && turns.length > 0;
+  const hasBlocked = blocked && blocked.length > 0;
+  const multiTurn  = hasTurns && turns.length > 1;
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-end animate-fade-in" onClick={onClose}>
-      <div className="bg-white w-full rounded-t-3xl shadow-2xl animate-slide-up overflow-hidden"
+      <div className="bg-white w-full rounded-t-3xl shadow-2xl animate-slide-up overflow-hidden flex flex-col"
+           style={{ maxHeight: "90vh" }}
            onClick={e => e.stopPropagation()}>
-        <div className="flex justify-center pt-3 pb-1">
+        {/* Handle */}
+        <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
           <div className="w-10 h-1 bg-gray-200 rounded-full" />
         </div>
 
-        {/* Header */}
-        <div className="px-5 pt-3 pb-4 flex items-center gap-3 border-b border-gray-100">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
-            <CheckCircle2 size={26} className="text-emerald-500" strokeWidth={2} />
+        <div className="overflow-y-auto flex-1">
+          {/* Header */}
+          <div className="px-5 pt-3 pb-4 flex items-center gap-3 border-b border-gray-100">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
+              <CheckCircle2 size={26} className="text-emerald-500" strokeWidth={2} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-black text-gray-900 text-base leading-tight">
+                {isAttraction ? "Reserva confirmada" : "Pedido confirmado"}
+              </p>
+              <p className="text-xs text-emerald-600 font-semibold mt-0.5 flex items-center gap-1">
+                <CheckCircle2 size={10} strokeWidth={2.5} />
+                Válido hoy · {new Date().toLocaleDateString("es-CO")}
+              </p>
+            </div>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                 style={{ background: pin.color + "22" }}>
+              <Icon size={17} style={{ color: pin.color }} strokeWidth={2} />
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-black text-gray-900 text-base leading-tight">
-              {isAttraction ? "Reserva confirmada" : "Pedido confirmado"}
-            </p>
-            <p className="text-xs text-emerald-600 font-semibold mt-0.5 flex items-center gap-1">
-              <CheckCircle2 size={10} strokeWidth={2.5} />
-              Válido hoy · {new Date().toLocaleDateString("es-CO")}
-            </p>
-          </div>
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-               style={{ background: pin.color + "22" }}>
-            <Icon size={17} style={{ color: pin.color }} strokeWidth={2} />
-          </div>
-        </div>
 
-        {/* QR */}
-        <div className="px-5 pt-5 pb-3 flex flex-col items-center gap-3">
-          <div className="bg-brand-50 border-2 border-brand-100 rounded-2xl p-4">
-            <div className="inline-grid gap-0.5" style={{ gridTemplateColumns: "repeat(7, 1fr)" }}>
-              {cells.map((on, i) => (
-                <div key={i}
-                  className={`w-5 h-5 rounded-[3px] ${on ? "bg-brand-900" : "bg-white"}`} />
+          {/* QR */}
+          <div className="px-5 pt-5 pb-3 flex flex-col items-center gap-3">
+            <div className="bg-brand-50 border-2 border-brand-100 rounded-2xl p-4">
+              <div className="inline-grid gap-0.5" style={{ gridTemplateColumns: "repeat(7, 1fr)" }}>
+                {cells.map((on, i) => (
+                  <div key={i}
+                    className={`w-5 h-5 rounded-[3px] ${on ? "bg-brand-900" : "bg-white"}`} />
+                ))}
+              </div>
+            </div>
+            <p className="font-mono text-xs font-bold text-gray-400 tracking-widest">{code}</p>
+          </div>
+
+          {/* Location + slot row */}
+          <div className="mx-5 mb-3 bg-gray-50 rounded-2xl px-4 py-3 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400 font-medium">Lugar</span>
+              <span className="font-bold text-gray-900 text-right">{pin.label}</span>
+            </div>
+            {slotLabel && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400 font-medium">Horario</span>
+                <span className="font-bold text-gray-900">{slotLabel}</span>
+              </div>
+            )}
+            {!isAttraction && items?.map(item => (
+              <div key={item.id} className="flex justify-between text-sm">
+                <span className="text-gray-400 font-medium">{item.name} × {item.qty}</span>
+                <span className="font-bold text-gray-900">{fmtCOP(item.price * item.qty)}</span>
+              </div>
+            ))}
+            {!isAttraction && total > 0 && (
+              <div className="flex justify-between text-sm border-t border-dashed border-gray-200 pt-2 mt-1">
+                <span className="font-black text-gray-900">Total</span>
+                <span className="font-black text-brand-700">{fmtCOP(total)}</span>
+              </div>
+            )}
+          </div>
+
+          {/* ── Turn breakdown (group reservations) ── */}
+          {hasTurns && (
+            <div className="mx-5 mb-3 space-y-2">
+              {multiTurn && (
+                <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-2xl px-4 py-2.5">
+                  <Users size={13} className="text-blue-500 flex-shrink-0" strokeWidth={2.5} />
+                  <p className="text-xs text-blue-700 font-semibold">
+                    Tu grupo fue dividido en {turns.length} turnos consecutivos
+                  </p>
+                </div>
+              )}
+              {turns.map((turn, ti) => (
+                <div key={ti} className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 animate-fade-in"
+                     style={{ animationDelay: `${ti * 80}ms` }}>
+                  <div className="flex items-center justify-between mb-2.5">
+                    <span className="text-[10px] font-black text-gray-400 tracking-widest uppercase">
+                      {multiTurn ? `Turno ${ti + 1} de ${turns.length}` : "Tu turno"}
+                    </span>
+                    <span className="text-xl font-black text-brand-700 tabular-nums leading-none">
+                      #{turn.turnNumber}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {turn.people.map(p => (
+                      <div key={p.id}
+                           className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-2.5 py-1.5">
+                        <div
+                          className="w-5 h-5 rounded-md flex items-center justify-center font-black text-white text-[9px] flex-shrink-0"
+                          style={{ background: p.id === "user" ? "#1d4ed8" : avatarColor(p.id) }}
+                        >
+                          {p.avatarInitial ?? p.name?.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="text-xs font-semibold text-gray-700 truncate max-w-[80px]">
+                          {p.isUser ? "Tú" : p.name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
-          </div>
-          <p className="font-mono text-xs font-bold text-gray-400 tracking-widest">{code}</p>
-        </div>
+          )}
 
-        {/* Summary */}
-        <div className="mx-5 mb-3 bg-gray-50 rounded-2xl px-4 py-3 space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-400 font-medium">Lugar</span>
-            <span className="font-bold text-gray-900 text-right">{pin.label}</span>
-          </div>
-          {isAttraction && slotLabel && (
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400 font-medium">Horario</span>
-              <span className="font-bold text-gray-900">{slotLabel}</span>
+          {/* ── Blocked members notice ── */}
+          {hasBlocked && (
+            <div className="mx-5 mb-3 border border-amber-200 bg-amber-50 rounded-2xl px-4 py-3">
+              <p className="text-[10px] font-black text-amber-600 tracking-wide uppercase mb-2">
+                No incluidos en esta reserva
+              </p>
+              <div className="space-y-1.5">
+                {blocked.map(p => (
+                  <div key={p.id} className="flex items-center gap-2">
+                    <div
+                      className="w-5 h-5 rounded-md flex items-center justify-center font-black text-white text-[9px] flex-shrink-0 opacity-60"
+                      style={{ background: p.id === "user" ? "#1d4ed8" : avatarColor(p.id) }}
+                    >
+                      {p.avatarInitial ?? p.name?.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-xs font-medium text-amber-700 flex-1 truncate">{p.isUser ? "Tú" : p.name}</span>
+                    <span className="text-[10px] text-amber-500 font-semibold flex-shrink-0">{p.reason}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
-          {!isAttraction && items?.map(item => (
-            <div key={item.id} className="flex justify-between text-sm">
-              <span className="text-gray-400 font-medium">{item.name} × {item.qty}</span>
-              <span className="font-bold text-gray-900">{fmtCOP(item.price * item.qty)}</span>
-            </div>
-          ))}
-          {!isAttraction && total > 0 && (
-            <div className="flex justify-between text-sm border-t border-dashed border-gray-200 pt-2 mt-1">
-              <span className="font-black text-gray-900">Total</span>
-              <span className="font-black text-brand-700">{fmtCOP(total)}</span>
+
+          {/* Cooldown notice */}
+          {hasTurns && (
+            <div className="mx-5 mb-4 flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-3">
+              <div className="w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center text-white text-[10px] font-black flex-shrink-0 mt-0.5">!</div>
+              <p className="text-xs text-amber-700 font-medium leading-relaxed">
+                Los participantes entran en tiempo frío de <strong>45 minutos</strong>. Muestra el QR al operario en la entrada prioritaria.
+              </p>
             </div>
           )}
-        </div>
+          {!isAttraction && (
+            <div className="mx-5 mb-4 flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-3">
+              <div className="w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center text-white text-[10px] font-black flex-shrink-0 mt-0.5">!</div>
+              <p className="text-xs text-amber-700 font-medium leading-relaxed">
+                Presenta este QR en caja del restaurante para reclamar tu pedido.
+              </p>
+            </div>
+          )}
 
-        {/* Hint */}
-        <div className="mx-5 mb-4 flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-3">
-          <div className="w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center text-white text-[10px] font-black flex-shrink-0 mt-0.5">!</div>
-          <p className="text-xs text-amber-700 font-medium leading-relaxed">
-            {isAttraction
-              ? "Muestra este QR al operario en la entrada prioritaria de la atracción."
-              : "Presenta este QR en caja del restaurante para reclamar tu pedido."}
-          </p>
-        </div>
-
-        <div className="px-5 pb-7">
-          <button onClick={onClose}
-            className="w-full bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-bold py-4 rounded-2xl text-sm transition-all shadow-lg shadow-brand-200">
-            Listo
-          </button>
+          <div className="px-5 pb-7">
+            <button onClick={onClose}
+              className="w-full bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-bold py-4 rounded-2xl text-sm transition-all shadow-lg shadow-brand-200">
+              Listo
+            </button>
+          </div>
         </div>
       </div>
     </div>
