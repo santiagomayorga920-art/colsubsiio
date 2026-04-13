@@ -1102,8 +1102,9 @@ function CapacityBar({ capacity, selected, color }) {
 
 // ─── MAP BOOKING MODAL ────────────────────────────────────────────────────────
 function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldown, onGroupReserve }) {
-  const [slot,    setSlot]    = useState(null);
-  const [btnState, setBtnState] = useState("idle"); // idle | loading | done
+  const [slot,       setSlot]      = useState(null);
+  const [btnState,   setBtnState]  = useState("idle"); // idle | loading | done
+  const [assignedTurns, setAssignedTurns] = useState([]); // populated on confirm
   const attr = ATTRACTIONS.find(a => a.id === pin.attrId);
   const { Icon } = pin;
 
@@ -1150,13 +1151,15 @@ function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldo
       if (onGroupReserve) {
         result = onGroupReserve({ attr, people });
       } else {
+        // Fallback when no onGroupReserve provided (e.g. non-attraction pins)
         result = { ok: true, turns: [{ turnNumber: 101, people }], eligible: people, blocked: [] };
       }
       if (result.ok) {
+        setAssignedTurns(result.turns);
         setBtnState("done");
         setTimeout(() => {
           onConfirm({ pin, slot, turns: result.turns, eligible: result.eligible, blocked: result.blocked });
-        }, 700);
+        }, 800);
       } else {
         setBtnState("idle");
       }
@@ -1406,9 +1409,14 @@ function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldo
             )}
             {btnState === "idle" && <QrCode size={16} strokeWidth={2.5} />}
             <span>
-              {btnState === "loading" && "Procesando reserva…"}
-              {btnState === "done"    && "¡Reserva confirmada!"}
-              {btnState === "idle"    && (
+              {btnState === "loading" && "Asignando turnos…"}
+              {btnState === "done" && assignedTurns.length > 0 && (
+                assignedTurns.length === 1
+                  ? `¡Turno #${assignedTurns[0].turnNumber} asignado!`
+                  : `Tus turnos: ${assignedTurns.map(t => `#${t.turnNumber}`).join(", ")}`
+              )}
+              {btnState === "done" && assignedTurns.length === 0 && "¡Reserva confirmada!"}
+              {btnState === "idle" && (
                 selectedCount > 0
                   ? `Reservar para ${selectedCount} persona${selectedCount > 1 ? "s" : ""}`
                   : "Selecciona al menos 1 persona"
@@ -3012,6 +3020,9 @@ export default function App() {
   const [showFPPopup, setShowFPPopup]   = useState(false);
   const [companions, setCompanions]     = useState([]);
   const [userCooldown, setUserCooldown] = useState(null);
+  // Global turn counter — seeds from a realistic mid-session value so turns
+  // start around 100-150 and increment sequentially across all reservations.
+  const [turnCounter, setTurnCounter]   = useState(() => 100 + Math.floor(Math.random() * 50));
 
   // myGroup: unified view of leader + companions (max 10 members total)
   const myGroup = useMemo(() => ({
@@ -3112,13 +3123,18 @@ export default function App() {
       return { ok: false, turns: [], eligible, blocked };
     }
 
-    // Split into consecutive turns when group exceeds capacity
-    const cap   = attr.capacity ?? 8;
-    const base  = (Math.floor(now / 60000) % 900) + 100;
+    // Split into consecutive turns using the global sequential counter
+    const cap = attr.capacity ?? 8;
     const turns = [];
+    let nextTurn;
+    setTurnCounter(prev => {
+      nextTurn = prev;
+      return prev + Math.ceil(eligible.length / cap); // advance counter by number of turns consumed
+    });
+    // nextTurn is set synchronously by the setter callback above
     for (let i = 0; i < eligible.length; i += cap) {
       turns.push({
-        turnNumber: base + Math.floor(i / cap),
+        turnNumber: nextTurn + Math.floor(i / cap),
         people: eligible.slice(i, i + cap),
       });
     }
@@ -3135,13 +3151,22 @@ export default function App() {
       );
     }
 
+    // Persist reservation with turns so QR screen can read them
     setReservations(prev => [
       ...prev,
-      { attractionId: attr.id, ts: now, groupTurns: turns },
+      {
+        id: genCode("RV"),
+        attractionId: attr.id,
+        attractionName: attr.name,
+        ts: now,
+        groupTurns: turns,
+        eligible,
+        blocked,
+      },
     ]);
 
     return { ok: true, turns, eligible, blocked };
-  }, [setUserCooldown, setCompanions, setReservations]);
+  }, [setTurnCounter, setUserCooldown, setCompanions, setReservations]);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-brand-950 p-4"
