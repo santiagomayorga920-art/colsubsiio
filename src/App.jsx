@@ -1472,183 +1472,338 @@ function MapMenuModal({ pin, onConfirm, onClose }) {
   );
 }
 
+// ─── FAST PASS TICKET ────────────────────────────────────────────────────────
+const MODAL_BG = "#07102b";
+
+function FastPassTicket({ turn, turnIndex, totalTurns, pin, slotLabel, code, multiTurn }) {
+  const seed  = (code + turn.turnNumber).split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  // 9×9 QR grid — more realistic than 7×7
+  const cells = Array.from({ length: 81 }, (_, i) => {
+    const corners = [
+      0,1,2,9,10,11,18,19,20,
+      6,7,8,15,16,17,24,25,26,
+      54,55,56,63,64,65,72,73,74,
+      60,61,62,69,70,71,78,79,80,
+    ];
+    return corners.includes(i) || ((seed * 31 + i * 17 + i * i * 3) % 11) < 6;
+  });
+  const { Icon } = pin;
+
+  return (
+    <div
+      className="animate-ticket-reveal mx-4 rounded-3xl overflow-hidden shadow-2xl"
+      style={{ animationDelay: `${turnIndex * 120}ms`, boxShadow: "0 24px 60px rgba(0,0,0,0.55)" }}
+    >
+      {/* ── Gradient header ── */}
+      <div
+        className="px-5 pt-6 pb-7 relative overflow-hidden"
+        style={{ background: "linear-gradient(135deg, #1a3a8f 0%, #0f2166 60%, #0a1855 100%)" }}
+      >
+        {/* Decorative blobs */}
+        <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-white/5 pointer-events-none" />
+        <div className="absolute -bottom-10 -left-6 w-28 h-28 rounded-full bg-white/5 pointer-events-none" />
+
+        {/* Brand strip */}
+        <div className="relative flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center">
+              <Zap size={14} className="text-white" strokeWidth={2.5} />
+            </div>
+            <div>
+              <p className="text-white/60 text-[8px] font-black tracking-[0.2em] uppercase leading-none">
+                PISCILAGO
+              </p>
+              <p className="text-white text-[9px] font-bold tracking-widest uppercase leading-none mt-0.5">
+                FAST PASS
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {multiTurn && (
+              <span className="text-[9px] font-black text-white/60 bg-white/10 px-2 py-1 rounded-full tracking-wide">
+                {turnIndex + 1} / {totalTurns}
+              </span>
+            )}
+            <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center">
+              <Icon size={16} className="text-white" strokeWidth={1.8} />
+            </div>
+          </div>
+        </div>
+
+        {/* Attraction name */}
+        <p className="relative text-white/60 text-[10px] font-black tracking-[0.18em] uppercase mb-1">
+          Atracción
+        </p>
+        <p className="relative text-white font-black text-[22px] leading-tight mb-4">
+          {pin.label}
+        </p>
+
+        {/* Turno + slot row */}
+        <div className="relative flex items-end justify-between">
+          <div>
+            <p className="text-white/50 text-[9px] font-bold tracking-widest uppercase mb-0.5">
+              Turno asignado
+            </p>
+            <p className="text-white font-black text-[44px] leading-none tabular-nums"
+               style={{ textShadow: "0 2px 20px rgba(255,255,255,0.15)" }}>
+              #{turn.turnNumber}
+            </p>
+          </div>
+          {slotLabel && (
+            <div className="text-right pb-1">
+              <p className="text-white/50 text-[9px] font-bold tracking-widest uppercase mb-0.5">
+                Horario
+              </p>
+              <p className="text-white font-bold text-sm">{slotLabel}</p>
+              <p className="text-white/50 text-[10px] font-medium mt-0.5">
+                {new Date().toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" })}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Ticket tear separator ── */}
+      <div className="relative flex items-center" style={{ height: "28px", background: "white" }}>
+        {/* Left notch */}
+        <div
+          className="absolute z-10 w-11 h-11 rounded-full pointer-events-none"
+          style={{ left: "-22px", top: "50%", transform: "translateY(-50%)", background: MODAL_BG }}
+        />
+        {/* Right notch */}
+        <div
+          className="absolute z-10 w-11 h-11 rounded-full pointer-events-none"
+          style={{ right: "-22px", top: "50%", transform: "translateY(-50%)", background: MODAL_BG }}
+        />
+        {/* Dashed line */}
+        <div className="absolute left-5 right-5 top-1/2 -translate-y-1/2 border-t-2 border-dashed border-gray-200 z-0" />
+      </div>
+
+      {/* ── White ticket body ── */}
+      <div className="bg-white px-5 pt-3 pb-6 flex flex-col items-center gap-4">
+        {/* QR with reveal animation */}
+        <div className="animate-zoom-in">
+          <div className="bg-white border-2 border-gray-100 rounded-2xl p-4 shadow-sm">
+            <div className="inline-grid gap-[3px]" style={{ gridTemplateColumns: "repeat(9, 1fr)" }}>
+              {cells.map((on, i) => (
+                <div
+                  key={i}
+                  className={`w-[18px] h-[18px] rounded-[3px] ${on ? "bg-gray-900" : "bg-white"}`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Code */}
+        <p className="font-mono text-[11px] font-black text-gray-300 tracking-[0.22em]">{code}</p>
+
+        {/* Group members row */}
+        <div className="w-full">
+          <p className="text-[9px] font-black text-gray-400 tracking-[0.18em] uppercase text-center mb-2.5">
+            {turn.people.length} participante{turn.people.length !== 1 ? "s" : ""}
+          </p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {turn.people.map(p => (
+              <div key={p.id} className="flex items-center gap-1.5 bg-gray-50 border border-gray-100 rounded-xl px-2.5 py-1.5">
+                <div
+                  className="w-5 h-5 rounded-md flex items-center justify-center font-black text-white text-[9px] flex-shrink-0"
+                  style={{ background: p.id === "user" ? "#1d4ed8" : avatarColor(p.id) }}
+                >
+                  {p.avatarInitial ?? p.name?.charAt(0).toUpperCase()}
+                </div>
+                <span className="text-xs font-semibold text-gray-700">
+                  {p.isUser ? "Tú" : p.name.split(" ")[0]}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Instruction strip */}
+        <div className="w-full flex items-center gap-2.5 bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3">
+          <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+            <CheckCircle2 size={14} className="text-white" strokeWidth={2.5} />
+          </div>
+          <p className="text-xs text-emerald-700 font-semibold leading-tight">
+            Muestra este pase al operario en la entrada prioritaria de la atracción
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── MAP REDEMPTION SHEET ────────────────────────────────────────────────────
 function MapRedemptionSheet({ data, onClose }) {
   const { pin, slot, items, total, turns, eligible, blocked } = data;
-  const isAttraction = !!slot || !!turns;
-  const [code] = useState(() => genCode(isAttraction ? "RES" : "FD"));
-  const seed   = code.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  const cells  = Array.from({ length: 49 }, (_, i) => {
-    const corners = [0,1,7,8, 5,6,12,13, 35,36,42,43, 40,41,47,48];
-    return corners.includes(i) || ((seed * 31 + i * 17 + i * i) % 13) < 7;
-  });
-  const slotLabel = MAP_TIME_SLOTS.find(s => s.id === slot)?.label;
-  const { Icon } = pin;
-  const hasTurns   = turns && turns.length > 0;
-  const hasBlocked = blocked && blocked.length > 0;
-  const multiTurn  = hasTurns && turns.length > 1;
+  const isAttraction = !!turns && turns.length > 0;
+  const slotLabel    = MAP_TIME_SLOTS.find(s => s.id === slot)?.label;
+  const [code]       = useState(() => genCode(isAttraction ? "RES" : "FD"));
+  const hasBlocked   = blocked && blocked.length > 0;
+  const multiTurn    = isAttraction && turns.length > 1;
 
-  return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-end animate-fade-in" onClick={onClose}>
-      <div className="bg-white w-full rounded-t-3xl shadow-2xl animate-slide-up overflow-hidden flex flex-col"
-           style={{ maxHeight: "90vh" }}
-           onClick={e => e.stopPropagation()}>
-        {/* Handle */}
-        <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-          <div className="w-10 h-1 bg-gray-200 rounded-full" />
-        </div>
-
-        <div className="overflow-y-auto flex-1">
-          {/* Header */}
-          <div className="px-5 pt-3 pb-4 flex items-center gap-3 border-b border-gray-100">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
-              <CheckCircle2 size={26} className="text-emerald-500" strokeWidth={2} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-black text-gray-900 text-base leading-tight">
-                {isAttraction ? "Reserva confirmada" : "Pedido confirmado"}
-              </p>
-              <p className="text-xs text-emerald-600 font-semibold mt-0.5 flex items-center gap-1">
-                <CheckCircle2 size={10} strokeWidth={2.5} />
-                Válido hoy · {new Date().toLocaleDateString("es-CO")}
-              </p>
-            </div>
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                 style={{ background: pin.color + "22" }}>
-              <Icon size={17} style={{ color: pin.color }} strokeWidth={2} />
-            </div>
+  // ── Restaurant order sheet (unchanged style, lighter redesign) ──
+  if (!isAttraction) {
+    const seed  = code.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+    const cells = Array.from({ length: 49 }, (_, i) => {
+      const corners = [0,1,7,8,5,6,12,13,35,36,42,43,40,41,47,48];
+      return corners.includes(i) || ((seed * 31 + i * 17 + i * i) % 13) < 7;
+    });
+    const { Icon } = pin;
+    return (
+      <div className="fixed inset-0 bg-black/60 z-50 flex items-end animate-fade-in" onClick={onClose}>
+        <div className="bg-white w-full rounded-t-3xl shadow-2xl animate-slide-up overflow-hidden"
+             style={{ maxHeight: "85vh" }} onClick={e => e.stopPropagation()}>
+          <div className="flex justify-center pt-3 pb-1">
+            <div className="w-10 h-1 bg-gray-200 rounded-full" />
           </div>
-
-          {/* QR */}
-          <div className="px-5 pt-5 pb-3 flex flex-col items-center gap-3">
-            <div className="bg-brand-50 border-2 border-brand-100 rounded-2xl p-4">
-              <div className="inline-grid gap-0.5" style={{ gridTemplateColumns: "repeat(7, 1fr)" }}>
-                {cells.map((on, i) => (
-                  <div key={i}
-                    className={`w-5 h-5 rounded-[3px] ${on ? "bg-brand-900" : "bg-white"}`} />
-                ))}
+          <div className="overflow-y-auto">
+            <div className="px-5 pt-3 pb-4 flex items-center gap-3 border-b border-gray-100">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                <CheckCircle2 size={26} className="text-emerald-500" strokeWidth={2} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-black text-gray-900 text-base">Pedido confirmado</p>
+                <p className="text-xs text-emerald-600 font-semibold mt-0.5">{pin.label}</p>
+              </div>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                   style={{ background: pin.color + "22" }}>
+                <Icon size={17} style={{ color: pin.color }} strokeWidth={2} />
               </div>
             </div>
-            <p className="font-mono text-xs font-bold text-gray-400 tracking-widest">{code}</p>
-          </div>
-
-          {/* Location + slot row */}
-          <div className="mx-5 mb-3 bg-gray-50 rounded-2xl px-4 py-3 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400 font-medium">Lugar</span>
-              <span className="font-bold text-gray-900 text-right">{pin.label}</span>
-            </div>
-            {slotLabel && (
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400 font-medium">Horario</span>
-                <span className="font-bold text-gray-900">{slotLabel}</span>
-              </div>
-            )}
-            {!isAttraction && items?.map(item => (
-              <div key={item.id} className="flex justify-between text-sm">
-                <span className="text-gray-400 font-medium">{item.name} × {item.qty}</span>
-                <span className="font-bold text-gray-900">{fmtCOP(item.price * item.qty)}</span>
-              </div>
-            ))}
-            {!isAttraction && total > 0 && (
-              <div className="flex justify-between text-sm border-t border-dashed border-gray-200 pt-2 mt-1">
-                <span className="font-black text-gray-900">Total</span>
-                <span className="font-black text-brand-700">{fmtCOP(total)}</span>
-              </div>
-            )}
-          </div>
-
-          {/* ── Turn breakdown (group reservations) ── */}
-          {hasTurns && (
-            <div className="mx-5 mb-3 space-y-2">
-              {multiTurn && (
-                <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-2xl px-4 py-2.5">
-                  <Users size={13} className="text-blue-500 flex-shrink-0" strokeWidth={2.5} />
-                  <p className="text-xs text-blue-700 font-semibold">
-                    Tu grupo fue dividido en {turns.length} turnos consecutivos
-                  </p>
+            <div className="px-5 pt-5 pb-3 flex flex-col items-center gap-3">
+              <div className="animate-zoom-in bg-gray-50 border-2 border-gray-100 rounded-2xl p-4">
+                <div className="inline-grid gap-0.5" style={{ gridTemplateColumns: "repeat(7, 1fr)" }}>
+                  {cells.map((on, i) => (
+                    <div key={i} className={`w-5 h-5 rounded-[3px] ${on ? "bg-gray-900" : "bg-white"}`} />
+                  ))}
                 </div>
-              )}
-              {turns.map((turn, ti) => (
-                <div key={ti} className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 animate-fade-in"
-                     style={{ animationDelay: `${ti * 80}ms` }}>
-                  <div className="flex items-center justify-between mb-2.5">
-                    <span className="text-[10px] font-black text-gray-400 tracking-widest uppercase">
-                      {multiTurn ? `Turno ${ti + 1} de ${turns.length}` : "Tu turno"}
-                    </span>
-                    <span className="text-xl font-black text-brand-700 tabular-nums leading-none">
-                      #{turn.turnNumber}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {turn.people.map(p => (
-                      <div key={p.id}
-                           className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-2.5 py-1.5">
-                        <div
-                          className="w-5 h-5 rounded-md flex items-center justify-center font-black text-white text-[9px] flex-shrink-0"
-                          style={{ background: p.id === "user" ? "#1d4ed8" : avatarColor(p.id) }}
-                        >
-                          {p.avatarInitial ?? p.name?.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="text-xs font-semibold text-gray-700 truncate max-w-[80px]">
-                          {p.isUser ? "Tú" : p.name}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+              </div>
+              <p className="font-mono text-xs font-black text-gray-300 tracking-widest">{code}</p>
+            </div>
+            <div className="mx-5 mb-3 bg-gray-50 rounded-2xl px-4 py-3 space-y-2">
+              {items?.map(item => (
+                <div key={item.id} className="flex justify-between text-sm">
+                  <span className="text-gray-500 font-medium">{item.name} × {item.qty}</span>
+                  <span className="font-bold text-gray-900">{fmtCOP(item.price * item.qty)}</span>
                 </div>
               ))}
+              {total > 0 && (
+                <div className="flex justify-between text-sm border-t border-dashed border-gray-200 pt-2">
+                  <span className="font-black text-gray-900">Total</span>
+                  <span className="font-black text-brand-700">{fmtCOP(total)}</span>
+                </div>
+              )}
             </div>
-          )}
-
-          {/* ── Blocked members notice ── */}
-          {hasBlocked && (
-            <div className="mx-5 mb-3 border border-amber-200 bg-amber-50 rounded-2xl px-4 py-3">
-              <p className="text-[10px] font-black text-amber-600 tracking-wide uppercase mb-2">
-                No incluidos en esta reserva
-              </p>
-              <div className="space-y-1.5">
-                {blocked.map(p => (
-                  <div key={p.id} className="flex items-center gap-2">
-                    <div
-                      className="w-5 h-5 rounded-md flex items-center justify-center font-black text-white text-[9px] flex-shrink-0 opacity-60"
-                      style={{ background: p.id === "user" ? "#1d4ed8" : avatarColor(p.id) }}
-                    >
-                      {p.avatarInitial ?? p.name?.charAt(0).toUpperCase()}
-                    </div>
-                    <span className="text-xs font-medium text-amber-700 flex-1 truncate">{p.isUser ? "Tú" : p.name}</span>
-                    <span className="text-[10px] text-amber-500 font-semibold flex-shrink-0">{p.reason}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Cooldown notice */}
-          {hasTurns && (
-            <div className="mx-5 mb-4 flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-3">
-              <div className="w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center text-white text-[10px] font-black flex-shrink-0 mt-0.5">!</div>
-              <p className="text-xs text-amber-700 font-medium leading-relaxed">
-                Los participantes entran en tiempo frío de <strong>45 minutos</strong>. Muestra el QR al operario en la entrada prioritaria.
-              </p>
-            </div>
-          )}
-          {!isAttraction && (
-            <div className="mx-5 mb-4 flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-3">
-              <div className="w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center text-white text-[10px] font-black flex-shrink-0 mt-0.5">!</div>
-              <p className="text-xs text-amber-700 font-medium leading-relaxed">
+            <div className="mx-5 mb-4 flex items-center gap-2.5 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3">
+              <div className="w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center text-white text-[10px] font-black flex-shrink-0">!</div>
+              <p className="text-xs text-amber-700 font-medium">
                 Presenta este QR en caja del restaurante para reclamar tu pedido.
               </p>
             </div>
-          )}
-
-          <div className="px-5 pb-7">
-            <button onClick={onClose}
-              className="w-full bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-bold py-4 rounded-2xl text-sm transition-all shadow-lg shadow-brand-200">
-              Listo
-            </button>
+            <div className="px-5 pb-7">
+              <button onClick={onClose}
+                className="w-full bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-bold py-4 rounded-2xl text-sm transition-all shadow-lg shadow-brand-200">
+                Volver al Mapa
+              </button>
+            </div>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // ── Attraction Fast Pass experience ──
+  return (
+    <div
+      className="fixed inset-0 z-50 flex flex-col animate-fade-in"
+      style={{ background: MODAL_BG }}
+    >
+      {/* Top bar */}
+      <div className="flex-shrink-0 flex items-center justify-between px-5 pt-safe pt-4 pb-3">
+        <div>
+          <p className="text-white/40 text-[9px] font-black tracking-[0.2em] uppercase">
+            Reserva confirmada
+          </p>
+          <p className="text-white font-black text-base leading-tight">Tu Fast Pass</p>
+        </div>
+        <button
+          onClick={onClose}
+          className="w-9 h-9 rounded-xl bg-white/10 text-white/70 hover:bg-white/20 flex items-center justify-center transition-all active:scale-90"
+        >
+          <X size={16} strokeWidth={2.5} />
+        </button>
+      </div>
+
+      {/* Multi-turn notice */}
+      {multiTurn && (
+        <div className="mx-5 mb-3 flex items-center gap-2.5 bg-white/10 rounded-2xl px-4 py-2.5 animate-fade-in flex-shrink-0">
+          <Users size={13} className="text-white/70 flex-shrink-0" strokeWidth={2.5} />
+          <p className="text-xs text-white/80 font-semibold">
+            Tu grupo fue dividido en <strong className="text-white">{turns.length} turnos consecutivos</strong> para mantenerlos juntos en el flujo
+          </p>
+        </div>
+      )}
+
+      {/* Scrollable ticket stack */}
+      <div className="flex-1 overflow-y-auto pb-6 space-y-4">
+        {turns.map((turn, ti) => (
+          <FastPassTicket
+            key={ti}
+            turn={turn}
+            turnIndex={ti}
+            totalTurns={turns.length}
+            pin={pin}
+            slotLabel={slotLabel}
+            code={`${code}-${ti + 1}`}
+            multiTurn={multiTurn}
+          />
+        ))}
+
+        {/* Blocked members */}
+        {hasBlocked && (
+          <div className="mx-4 bg-white/10 rounded-2xl px-4 py-3 animate-fade-in">
+            <p className="text-[9px] font-black text-white/50 tracking-[0.15em] uppercase mb-2.5">
+              No incluidos en esta reserva
+            </p>
+            <div className="space-y-2">
+              {blocked.map(p => (
+                <div key={p.id} className="flex items-center gap-2.5">
+                  <div
+                    className="w-6 h-6 rounded-lg flex items-center justify-center font-black text-white text-[10px] opacity-50"
+                    style={{ background: p.id === "user" ? "#1d4ed8" : avatarColor(p.id) }}
+                  >
+                    {p.avatarInitial ?? p.name?.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-xs font-semibold text-white/60 flex-1 truncate">
+                    {p.isUser ? "Tú" : p.name}
+                  </span>
+                  <span className="text-[10px] text-amber-400 font-semibold">{p.reason}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Cooldown reminder */}
+        <div className="mx-4 bg-amber-400/15 border border-amber-400/25 rounded-2xl px-4 py-3 animate-fade-in">
+          <p className="text-xs text-amber-300 font-semibold leading-relaxed">
+            <span className="font-black">⏱ 45 min de tiempo frío</span> aplicado a todos los participantes confirmados.
+          </p>
+        </div>
+      </div>
+
+      {/* Bottom CTA */}
+      <div className="flex-shrink-0 px-5 pb-safe pb-6 pt-3"
+           style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+        <button
+          onClick={onClose}
+          className="w-full flex items-center justify-center gap-2 bg-white hover:bg-gray-100 active:scale-[0.97] text-brand-900 font-black py-4 rounded-2xl text-sm transition-all shadow-lg"
+        >
+          <MapPin size={15} strokeWidth={2.5} />
+          Volver al Mapa
+        </button>
       </div>
     </div>
   );
