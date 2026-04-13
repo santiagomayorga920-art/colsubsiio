@@ -8,7 +8,8 @@ import {
   BadgeCheck, CreditCard as CardIcon, ChevronRight, Lock as LockIcon,
   MessageCircle, Send,
   MapPin, HelpCircle, ArrowLeft, Minus, Plus, ShoppingCart,
-  ZoomIn, ZoomOut, Timer, Utensils, Toilet
+  ZoomIn, ZoomOut, Timer, Utensils, Toilet,
+  UserCircle2
 } from "lucide-react";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
@@ -570,6 +571,7 @@ const TABS = [
   { id: "mapa",        label: "Mapa",         Icon: Map },
   { id: "comida",      label: "Comida",        Icon: UtensilsCrossed },
   { id: "fastpass",    label: "Fast Pass",     Icon: ZapIcon },
+  { id: "perfil",      label: "Perfil",        Icon: UserCircle2 },
 ];
 
 function BottomNav({ active, onSelect }) {
@@ -1773,7 +1775,216 @@ function HelpBot() {
 }
 
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
-function Dashboard({ user, reservations, onReserve, onLogout, fastPass, setFastPass, onToast, showFPPopup, onDismissPopup }) {
+// ─── PROFILE TAB ──────────────────────────────────────────────────────────────
+const AVATAR_PALETTE = ["#1d4ed8","#7c3aed","#0891b2","#16a34a","#ea580c","#dc2626","#b45309"];
+const avatarColor = (id) =>
+  AVATAR_PALETTE[id.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR_PALETTE.length];
+
+function ProfileTab({ user, companions, userCooldown, onAddCompanion, onRemoveCompanion }) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm]       = useState({ name: "", dob: "" });
+  const [errs, setErrs]       = useState({});
+
+  const submit = () => {
+    const e = {};
+    if (!form.name.trim()) e.name = "Nombre requerido";
+    if (!form.dob)         e.dob  = "Fecha de nacimiento requerida";
+    else if (calcAge(form.dob) < 0) e.dob = "Fecha inválida";
+    setErrs(e);
+    if (Object.keys(e).length) return;
+    onAddCompanion({ name: form.name.trim(), age: calcAge(form.dob) });
+    setForm({ name: "", dob: "" });
+    setErrs({});
+    setShowAdd(false);
+  };
+
+  const closeAdd = () => { setShowAdd(false); setForm({ name:"", dob:"" }); setErrs({}); };
+  const previewAge = form.dob ? calcAge(form.dob) : null;
+
+  return (
+    <>
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-24 space-y-4">
+
+        {/* ── Titular card ── */}
+        <div className="bg-brand-900 rounded-3xl overflow-hidden relative shadow-lg">
+          <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-brand-700 opacity-25 pointer-events-none" />
+          <div className="absolute -bottom-10 -left-6 w-28 h-28 rounded-full bg-brand-800 opacity-30 pointer-events-none" />
+          <div className="relative px-5 pt-5 pb-5 flex items-center gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-gold-400 flex items-center justify-center font-black text-brand-900 text-2xl flex-shrink-0 shadow-lg">
+              {user.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white font-black text-[17px] leading-tight truncate">{user.name}</p>
+              <p className="text-brand-300 text-xs font-medium mt-0.5 truncate">{user.email}</p>
+              <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                <span className="bg-white/10 text-brand-200 text-[10px] font-bold px-2.5 py-1 rounded-full">
+                  {user.docType} · {user.doc.slice(0,3)}···{user.doc.slice(-2)}
+                </span>
+                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                  isCooldownFree(userCooldown)
+                    ? "bg-emerald-500/20 text-emerald-300"
+                    : "bg-amber-400/20 text-amber-300"}`}>
+                  {isCooldownFree(userCooldown) ? "✓ Disponible" : "⏱ En espera"}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Mi Grupo header ── */}
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-black text-gray-900 text-[15px]">Mi Grupo</p>
+            <p className="text-[11px] text-gray-400 font-medium mt-0.5">
+              {companions.length === 0
+                ? "Sin acompañantes registrados"
+                : `${companions.length} acompañante${companions.length !== 1 ? "s" : ""}`}
+            </p>
+          </div>
+          <button
+            onClick={() => setShowAdd(true)}
+            className="flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 active:scale-95 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl shadow-md shadow-brand-200/60 transition-all"
+          >
+            <Plus size={13} strokeWidth={2.5} /> Añadir
+          </button>
+        </div>
+
+        {/* ── Empty state ── */}
+        {companions.length === 0 && (
+          <div className="border-2 border-dashed border-gray-200 rounded-2xl px-5 py-9 flex flex-col items-center gap-3 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center">
+              <Users size={24} className="text-gray-300" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-gray-400">Agrega a tu grupo familiar</p>
+              <p className="text-[11px] text-gray-300 leading-relaxed mt-1 max-w-[220px] mx-auto">
+                Los acompañantes comparten el tiempo de espera al reservar atracciones juntos.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowAdd(true)}
+              className="flex items-center gap-1.5 text-brand-600 text-xs font-bold mt-1 active:scale-95 transition-all"
+            >
+              <Plus size={12} strokeWidth={2.5} /> Añadir primer acompañante
+            </button>
+          </div>
+        )}
+
+        {/* ── Companion list ── */}
+        {companions.length > 0 && (
+          <div className="space-y-2.5">
+            {companions.map((c, idx) => {
+              const free = isCooldownFree(c.cooldownUntil);
+              const bg   = avatarColor(c.id);
+              return (
+                <div
+                  key={c.id}
+                  className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3.5 flex items-center gap-3.5 animate-pop-in"
+                  style={{ animationDelay: `${idx * 50}ms`, animationFillMode: "both" }}
+                >
+                  <div
+                    className="w-11 h-11 rounded-xl flex items-center justify-center font-black text-white text-base flex-shrink-0 shadow-sm"
+                    style={{ background: bg }}
+                  >
+                    {c.avatarInitial}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-gray-900 text-sm leading-tight truncate">{c.name}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] text-gray-400 font-medium">{c.age} años</span>
+                      <span className="text-gray-200 text-[10px]">•</span>
+                      <span className={`text-[10px] font-bold ${free ? "text-emerald-600" : "text-amber-600"}`}>
+                        {free ? "✓ Disponible" : "⏱ En espera"}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => onRemoveCompanion(c.id)}
+                    className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-red-50 hover:text-red-400 text-gray-400 flex items-center justify-center transition-all active:scale-90 flex-shrink-0"
+                  >
+                    <X size={13} strokeWidth={2.5} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── Add companion sheet ── */}
+      {showAdd && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 flex items-end animate-fade-in"
+          onClick={closeAdd}
+        >
+          <div
+            className="bg-white w-full rounded-t-3xl shadow-2xl animate-slide-up px-5 pt-2 pb-8"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex justify-center py-3">
+              <div className="w-10 h-1 bg-gray-200 rounded-full" />
+            </div>
+            <div className="flex items-center justify-between mb-5">
+              <p className="font-black text-gray-900 text-[17px]">Nuevo acompañante</p>
+              <button onClick={closeAdd} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <X size={18} strokeWidth={2} />
+              </button>
+            </div>
+            <div className="space-y-3.5">
+              <Field
+                label="Nombre completo"
+                placeholder="Ej. María García"
+                value={form.name}
+                onChange={v => setForm(p => ({ ...p, name: v }))}
+                error={errs.name}
+                icon={User}
+              />
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-500 tracking-wide">
+                  Fecha de nacimiento
+                </label>
+                <div className={`flex items-center gap-2.5 border rounded-xl px-3.5 py-3 transition-all
+                  ${errs.dob
+                    ? "border-red-300 bg-red-50 ring-1 ring-red-200"
+                    : "border-gray-200 bg-gray-50 focus-within:border-brand-400 focus-within:bg-white focus-within:ring-1 focus-within:ring-brand-100"}`}>
+                  <Calendar size={15} className={errs.dob ? "text-red-400" : "text-gray-400"} strokeWidth={2} />
+                  <input
+                    type="date"
+                    value={form.dob}
+                    onChange={e => setForm(p => ({ ...p, dob: e.target.value }))}
+                    max={new Date().toISOString().split("T")[0]}
+                    className="flex-1 bg-transparent text-sm text-gray-800 outline-none font-medium"
+                  />
+                </div>
+                {errs.dob && (
+                  <div className="flex items-center gap-1.5">
+                    <AlertCircle size={12} className="text-red-400 flex-shrink-0" />
+                    <p className="text-red-500 text-xs font-medium">{errs.dob}</p>
+                  </div>
+                )}
+              </div>
+              {previewAge !== null && previewAge >= 0 && (
+                <div className="flex items-center gap-2 bg-brand-50 border border-brand-100 rounded-xl px-3.5 py-2.5 animate-fade-in">
+                  <CheckCircle2 size={13} className="text-brand-500 flex-shrink-0" strokeWidth={2.5} />
+                  <p className="text-xs text-brand-700 font-semibold">{previewAge} años</p>
+                </div>
+              )}
+              <button
+                onClick={submit}
+                className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-bold py-4 rounded-2xl text-sm transition-all shadow-lg shadow-brand-200"
+              >
+                <Plus size={15} strokeWidth={2.5} /> Añadir al grupo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function Dashboard({ user, reservations, onReserve, onLogout, fastPass, setFastPass, onToast, showFPPopup, onDismissPopup,
+                     companions, userCooldown, onAddCompanion, onRemoveCompanion, onApplyUserCooldown, onApplyCompanionCooldown }) {
   const [activeTab, setActiveTab] = useState("atracciones");
 
   return (
@@ -1789,6 +2000,15 @@ function Dashboard({ user, reservations, onReserve, onLogout, fastPass, setFastP
           {activeTab === "comida"   && <FoodTab onToast={onToast} />}
           {activeTab === "fastpass" && (
             <FastPassTab user={user} fastPass={fastPass} setFastPass={setFastPass} onToast={onToast} />
+          )}
+          {activeTab === "perfil" && (
+            <ProfileTab
+              user={user}
+              companions={companions}
+              userCooldown={userCooldown}
+              onAddCompanion={onAddCompanion}
+              onRemoveCompanion={onRemoveCompanion}
+            />
           )}
         </div>
         <BottomNav active={activeTab} onSelect={setActiveTab} />
