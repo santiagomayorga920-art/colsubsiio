@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   User, Lock, Mail, Phone, CreditCard, Calendar,
   Eye, EyeOff, Zap, ShieldCheck, RefreshCw, AlertCircle,
@@ -99,6 +99,7 @@ const mkCompanion = ({ name, age }) => ({
   age: Number(age),
   avatarInitial: name.trim().charAt(0).toUpperCase(),
   cooldownUntil: null,
+  status: "available",          // "available" | "cooldown" | "inUse"
 });
 const getFPAccessible = (category) => {
   const slot = getTimeSlot();
@@ -2479,8 +2480,33 @@ export default function App() {
   const [companions, setCompanions]     = useState([]);
   const [userCooldown, setUserCooldown] = useState(null);
 
+  // myGroup: unified view of leader + companions (max 10 members total)
+  const myGroup = useMemo(() => ({
+    leader: {
+      id: "user",
+      name: user?.name ?? "Tú",
+      age: user?.dob ? (calcAge(user.dob) ?? 18) : 18,
+      avatarInitial: user?.name?.charAt(0).toUpperCase() ?? "U",
+      cooldownUntil: userCooldown,
+      status: isCooldownFree(userCooldown) ? "available" : "cooldown",
+      isUser: true,
+    },
+    members: companions.slice(0, 10).map(c => ({
+      ...c,
+      status: isCooldownFree(c.cooldownUntil) ? "available" : "cooldown",
+    })),
+    get all() { return [this.leader, ...this.members]; },
+  }), [user, userCooldown, companions]);
+
+  // isAvailable: returns true if the person with the given id is not in cooldown
+  const isAvailable = useCallback((personId) => {
+    if (personId === "user") return isCooldownFree(userCooldown);
+    const companion = companions.find(c => c.id === personId);
+    return companion ? isCooldownFree(companion.cooldownUntil) : false;
+  }, [userCooldown, companions]);
+
   const addCompanion = useCallback((data) => {
-    setCompanions(prev => [...prev, mkCompanion(data)]);
+    setCompanions(prev => prev.length >= 10 ? prev : [...prev, mkCompanion(data)]);
   }, []);
 
   const removeCompanion = useCallback((id) => {
@@ -2493,7 +2519,7 @@ export default function App() {
 
   const applyCompanionCooldown = useCallback((id) => {
     setCompanions(prev =>
-      prev.map(c => c.id === id ? { ...c, cooldownUntil: Date.now() + COOLDOWN_MS } : c)
+      prev.map(c => c.id === id ? { ...c, cooldownUntil: Date.now() + COOLDOWN_MS, status: "cooldown" } : c)
     );
   }, []);
 
