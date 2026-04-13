@@ -13,16 +13,17 @@ import {
 } from "lucide-react";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
-const COOLDOWN_MS = 2 * 60 * 60 * 1000;
+const COOLDOWN_MS       = 2 * 60 * 60 * 1000;
+const GROUP_COOLDOWN_MS = 45 * 60 * 1000;
 const VERIFY_CODE = "123456";
 const FAST_PASS_PRICES = { nonAffiliate: 120000, A: 35000, B: 55000, C: 85000 };
 
 const ATTRACTIONS = [
-  { id: "megatobogan",   name: "Megatobogán",        icon: "megatobogan",  waitMin: 8,  waitMax: 25, time: "~3 min",  color: "#f97316", bg: "#fff7ed" },
-  { id: "bosque-lluvia", name: "Bosque de la Lluvia", icon: "bosque",       waitMin: 5,  waitMax: 20, time: "~15 min", color: "#16a34a", bg: "#f0fdf4" },
-  { id: "piscina-olas",  name: "Piscina de Olas",     icon: "piscina",      waitMin: 10, waitMax: 40, time: "~20 min", color: "#0284c7", bg: "#f0f9ff" },
-  { id: "tornado",       name: "El Tornado",           icon: "tornado",      waitMin: 6,  waitMax: 30, time: "~5 min",  color: "#7c3aed", bg: "#faf5ff" },
-  { id: "rio-lento",     name: "Río Lento",            icon: "rio",          waitMin: 2,  waitMax: 15, time: "~25 min", color: "#0891b2", bg: "#ecfeff" },
+  { id: "megatobogan",   name: "Megatobogán",        icon: "megatobogan",  waitMin: 8,  waitMax: 25, time: "~3 min",  color: "#f97316", bg: "#fff7ed", minAge: 12, capacity: 6 },
+  { id: "bosque-lluvia", name: "Bosque de la Lluvia", icon: "bosque",       waitMin: 5,  waitMax: 20, time: "~15 min", color: "#16a34a", bg: "#f0fdf4", minAge:  5, capacity: 10 },
+  { id: "piscina-olas",  name: "Piscina de Olas",     icon: "piscina",      waitMin: 10, waitMax: 40, time: "~20 min", color: "#0284c7", bg: "#f0f9ff", minAge:  3, capacity:  8 },
+  { id: "tornado",       name: "El Tornado",           icon: "tornado",      waitMin: 6,  waitMax: 30, time: "~5 min",  color: "#7c3aed", bg: "#faf5ff", minAge: 14, capacity:  4 },
+  { id: "rio-lento",     name: "Río Lento",            icon: "rio",          waitMin: 2,  waitMax: 15, time: "~25 min", color: "#0891b2", bg: "#ecfeff", minAge:  5, capacity:  8 },
 ];
 
 const RESTAURANTS = [
@@ -1984,7 +1985,8 @@ function ProfileTab({ user, companions, userCooldown, onAddCompanion, onRemoveCo
 }
 
 function Dashboard({ user, reservations, onReserve, onLogout, fastPass, setFastPass, onToast, showFPPopup, onDismissPopup,
-                     companions, userCooldown, onAddCompanion, onRemoveCompanion, onApplyUserCooldown, onApplyCompanionCooldown }) {
+                     companions, userCooldown, onAddCompanion, onRemoveCompanion, onApplyUserCooldown, onApplyCompanionCooldown,
+                     onGroupReserve }) {
   const [activeTab, setActiveTab] = useState("atracciones");
 
   return (
@@ -2362,6 +2364,68 @@ export default function App() {
     return true;
   };
 
+  /**
+   * handleGroupReserve({ attr, people })
+   *
+   * people: Array<{ id, name, age, cooldownUntil }>
+   *   - use id "user" for the account holder
+   *   - use companion id (c-…) for each companion
+   *
+   * Returns:
+   *   { ok, turns, eligible, blocked }
+   *   turns: [{ turnNumber, people[] }, ...]
+   *   blocked: [{ ...person, reason }]
+   */
+  const handleGroupReserve = useCallback(({ attr, people }) => {
+    const now = Date.now();
+    const eligible = [];
+    const blocked  = [];
+
+    for (const person of people) {
+      if (person.age < attr.minAge) {
+        blocked.push({ ...person, reason: `Edad mínima ${attr.minAge} años` });
+      } else if (!isCooldownFree(person.cooldownUntil)) {
+        blocked.push({ ...person, reason: "En tiempo de espera (45 min)" });
+      } else {
+        eligible.push(person);
+      }
+    }
+
+    if (eligible.length === 0) {
+      return { ok: false, turns: [], eligible, blocked };
+    }
+
+    // Split into consecutive turns when group exceeds capacity
+    const cap   = attr.capacity ?? 8;
+    const base  = (Math.floor(now / 60000) % 900) + 100;
+    const turns = [];
+    for (let i = 0; i < eligible.length; i += cap) {
+      turns.push({
+        turnNumber: base + Math.floor(i / cap),
+        people: eligible.slice(i, i + cap),
+      });
+    }
+
+    // Apply 45-min cooldown to all eligible members
+    const until = now + GROUP_COOLDOWN_MS;
+    if (eligible.find(p => p.id === "user")) {
+      setUserCooldown(until);
+    }
+    const companionIds = eligible.filter(p => p.id !== "user").map(p => p.id);
+    if (companionIds.length) {
+      setCompanions(prev =>
+        prev.map(c => companionIds.includes(c.id) ? { ...c, cooldownUntil: until } : c)
+      );
+    }
+
+    setReservations(prev => [
+      ...prev,
+      { attractionId: attr.id, ts: now, groupTurns: turns },
+    ]);
+
+    return { ok: true, turns, eligible, blocked };
+  }, [setUserCooldown, setCompanions, setReservations]);
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-brand-950 p-4"
          style={{ background: "linear-gradient(135deg, #0a1e4f 0%, #1a56db 60%, #0891b2 100%)" }}>
@@ -2400,6 +2464,7 @@ export default function App() {
               onRemoveCompanion={removeCompanion}
               onApplyUserCooldown={applyUserCooldown}
               onApplyCompanionCooldown={applyCompanionCooldown}
+              onGroupReserve={handleGroupReserve}
             />
           )}
         </div>
