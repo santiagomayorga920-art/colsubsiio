@@ -1128,25 +1128,25 @@ function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldo
     return { eligible: true, kind: null, reason: null };
   };
 
-  const [selectedIds, setSelectedIds] = useState(
-    () => new Set(allPeople.filter(p => getStatus(p).eligible).map(p => p.id))
+  // selectedCompanions: array of selected person IDs (string[])
+  // Initialised with all eligible people pre-selected
+  const [selectedCompanions, setSelectedCompanions] = useState(
+    () => allPeople.filter(p => getStatus(p).eligible).map(p => p.id)
   );
 
   const toggle = (id) =>
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+    setSelectedCompanions(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
 
-  const selectedCount = selectedIds.size;
+  const selectedCount = selectedCompanions.length;
   const canConfirm    = !!slot && selectedCount > 0 && btnState === "idle";
 
   const handleConfirm = () => {
     if (!canConfirm) return;
     setBtnState("loading");
     setTimeout(() => {
-      const people = allPeople.filter(p => selectedIds.has(p.id));
+      const people = allPeople.filter(p => selectedCompanions.includes(p.id));
       let result;
       if (onGroupReserve) {
         result = onGroupReserve({ attr, people });
@@ -1227,7 +1227,7 @@ function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldo
             <div className="space-y-2">
               {allPeople.map(person => {
                 const { eligible, kind, reason } = getStatus(person);
-                const checked = selectedIds.has(person.id) && eligible;
+                const checked = selectedCompanions.includes(person.id) && eligible;
                 const bg = person.isUser ? "#1d4ed8" : avatarColor(person.id);
                 return (
                   <button
