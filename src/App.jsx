@@ -2231,33 +2231,63 @@ function MapTab({ user, companions, userCooldown, onGroupReserve }) {
             </svg>
           )}
 
-          {/* Pins — inside transform so they move with the map */}
-          {visible.map(pin => {
-            const { Icon } = pin;
-            const isSelected = selected?.id === pin.id;
-            return (
-              <button
-                key={pin.id}
-                onPointerDown={e => e.stopPropagation()}
-                onClick={e => handlePin(e, pin)}
-                style={{ left: `${pin.x}%`, top: `${pin.y}%`, position: "absolute" }}
-                className="transform -translate-x-1/2 -translate-y-full active:scale-90 transition-transform z-10"
-              >
-                <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center shadow-lg border-2 border-white transition-all
-                    ${isSelected ? "scale-125 ring-2 ring-offset-1" : ""}`}
-                  style={{
-                    background: pin.color,
-                    ringColor: pin.color,
-                  }}
+          {/* Pins — counter-scale so they stay visually constant size while map zooms */}
+          {(() => {
+            const pinScale   = 1 / scale;                 // inverse of map zoom
+            const showLabel  = scale >= 2;                // reveal labels when zoomed ≥ 2×
+            return visible.map(pin => {
+              const { Icon } = pin;
+              const isSelected = selected?.id === pin.id;
+              return (
+                <button
+                  key={pin.id}
+                  onPointerDown={e => e.stopPropagation()}
+                  onClick={e => handlePin(e, pin)}
+                  style={{ left: `${pin.x}%`, top: `${pin.y}%`, position: "absolute" }}
+                  className="z-10 group"
                 >
-                  <Icon size={16} color="#fff" strokeWidth={2} />
-                </div>
-                <div className="w-0 h-0 border-l-[5px] border-r-[5px] border-t-[6px] border-l-transparent border-r-transparent mx-auto"
-                     style={{ borderTopColor: pin.color }} />
-              </button>
-            );
-          })}
+                  {/* Inner wrapper — applies counter-scale anchored at arrow tip */}
+                  <div style={{
+                    transformOrigin: "50% 100%",
+                    transform: `translateX(-50%) translateY(-100%) scale(${isSelected ? pinScale * 1.22 : pinScale})`,
+                    transition: "transform 0.18s cubic-bezier(0.34,1.56,0.64,1)",
+                    display: "flex", flexDirection: "column", alignItems: "center",
+                  }}>
+                    {/* Circle — shadcn style: white bg + colored border + colored icon */}
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center bg-white border-2 group-active:scale-90 transition-transform"
+                      style={{
+                        borderColor: pin.color,
+                        boxShadow: isSelected
+                          ? `0 0 0 3px ${pin.color}55, 0 4px 12px ${pin.color}44`
+                          : "0 2px 8px rgba(0,0,0,0.18)",
+                      }}
+                    >
+                      <Icon size={16} strokeWidth={2.5} style={{ color: pin.color }} />
+                    </div>
+
+                    {/* Label pill — fades in when scale ≥ 2 */}
+                    <div style={{
+                      opacity:   showLabel ? 1 : 0,
+                      maxHeight: showLabel ? 24 : 0,
+                      overflow: "hidden",
+                      transition: "opacity 0.25s ease, max-height 0.25s ease",
+                      pointerEvents: "none",
+                    }}>
+                      <div className="mt-1 px-2 py-0.5 bg-white/95 rounded-full shadow text-[9px] font-bold whitespace-nowrap"
+                           style={{ color: pin.color, border: `1px solid ${pin.color}44` }}>
+                        {pin.label}
+                      </div>
+                    </div>
+
+                    {/* Arrow tail */}
+                    <div className="w-0 h-0 border-l-[5px] border-r-[5px] border-t-[7px] border-l-transparent border-r-transparent"
+                         style={{ borderTopColor: pin.color }} />
+                  </div>
+                </button>
+              );
+            });
+          })()}
         </div>
 
         {/* Zoom controls */}
