@@ -11,6 +11,7 @@ import {
   ZoomIn, ZoomOut, Timer, Utensils, Toilet,
   UserCircle2,
   Heart, Tent, PawPrint, Package, Info, Car, Shirt, Flame,
+  CupSoda, Pizza, Beef, IceCream2,
 } from "lucide-react";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
@@ -2549,12 +2550,18 @@ function MapTab({ user, companions, userCooldown, onGroupReserve }) {
 
 // ─── FOOD TAB ─────────────────────────────────────────────────────────────────
 const REST_CONFIG = {
-  cascada:          { Icon: Droplets,        color: "#0891b2", bg: "#ecfeff" },
-  rancho:           { Icon: Flame,           color: "#d97706", bg: "#fffbeb" },
-  pizzalago:        { Icon: UtensilsCrossed, color: "#dc2626", bg: "#fef2f2" },
-  mirador:          { Icon: Star,            color: "#92400e", bg: "#fef3c7" },
-  "piscilago-rest": { Icon: Utensils,        color: "#0369a1", bg: "#eff6ff" },
-  "kiosco-a":       { Icon: Package,         color: "#65a30d", bg: "#f7fee7" },
+  // La Cascada — snacks helados y bebidas
+  cascada:          { Icon: CupSoda,   color: "#0891b2", bg: "#ecfeff" },
+  // El Rancho — parrilla y fuego
+  rancho:           { Icon: Beef,      color: "#b45309", bg: "#fef3c7" },
+  // PizzaLago — pizzas artesanales
+  pizzalago:        { Icon: Pizza,     color: "#dc2626", bg: "#fef2f2" },
+  // Restaurante Mirador — platos típicos con vista panorámica
+  mirador:          { Icon: Utensils,  color: "#7c3aed", bg: "#f5f3ff" },
+  // Restaurant Piscilago — comida rápida junto a piscinas
+  "piscilago-rest": { Icon: UtensilsCrossed, color: "#0369a1", bg: "#eff6ff" },
+  // Kiosco Comidas Rápidas — snacks al paso
+  "kiosco-a":       { Icon: IceCream2, color: "#db2777", bg: "#fdf2f8" },
 };
 
 function FoodTab({ onToast }) {
