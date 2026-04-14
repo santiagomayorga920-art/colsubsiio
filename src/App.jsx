@@ -641,48 +641,55 @@ function DashboardHeader({ user, fastPassActive, onLogout }) {
   const hour      = new Date().getHours();
   const greeting  = hour < 12 ? "Buenos días" : hour < 18 ? "Buenas tardes" : "Buenas noches";
   return (
-    <div className="bg-brand-900 px-4 pt-7 pb-4 flex-shrink-0 relative overflow-hidden">
+    <div className="bg-brand-900 px-4 pt-8 pb-5 flex-shrink-0 relative overflow-hidden">
       {/* Decorative blobs */}
-      <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-brand-700 opacity-30 pointer-events-none" />
-      <div className="absolute top-2 right-24 w-16 h-16 rounded-full bg-gold-400 opacity-10 pointer-events-none" />
+      <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-brand-700 opacity-25 pointer-events-none" />
+      <div className="absolute top-0 right-20 w-20 h-20 rounded-full bg-gold-400 opacity-10 pointer-events-none" />
+      <div className="absolute bottom-0 left-8 w-14 h-14 rounded-full bg-brand-600 opacity-20 pointer-events-none" />
 
-      {/* Top row: wordmark + logout */}
-      <div className="relative flex items-center justify-between mb-3">
+      {/* Top row: wordmark + logout icon */}
+      <div className="relative flex items-center justify-between mb-4">
         <PiscilagoWordmark />
         <button
           onClick={onLogout}
-          className="flex items-center gap-1.5 text-brand-300 hover:text-white text-xs font-semibold transition-colors flex-shrink-0"
+          className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/20 transition-all active:scale-90"
         >
-          <LogOut size={13} strokeWidth={2} /> Salir
+          <LogOut size={15} strokeWidth={2} />
         </button>
       </div>
 
       {/* User card */}
-      <div className="relative bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 flex items-center gap-3">
-        {/* Avatar */}
-        <div className="w-11 h-11 rounded-full bg-gold-400 flex items-center justify-center
-                        font-black text-brand-900 text-lg flex-shrink-0 shadow-md">
+      <div className="relative bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3.5 flex items-center gap-3">
+        {/* Avatar with gold ring */}
+        <div className="w-12 h-12 rounded-full bg-gold-400 flex items-center justify-center
+                        font-black text-brand-900 text-xl flex-shrink-0 shadow-lg
+                        ring-2 ring-gold-300/40">
           {initial}
         </div>
+
+        {/* Name / greeting */}
         <div className="flex-1 min-w-0">
-          <p className="text-white/60 text-[11px] font-medium">{greeting}</p>
-          <p className="text-white font-bold text-base truncate leading-tight">{user.name}</p>
-          <div className="flex items-center gap-2 mt-0.5">
-            <div className="flex items-center gap-1">
-              <Star size={10} className="text-gold-400" fill="#F59E0B" />
-              <span className="text-gold-300 text-[10px] font-semibold">150 pts</span>
-            </div>
-            <span className="text-white/20 text-[10px]">•</span>
-            <div className="flex items-center gap-1">
-              <Clock size={10} className="text-white/50" />
-              <span className="text-white/50 text-[10px]">Franja 10:00–12:00</span>
-            </div>
+          <p className="text-white/50 text-[10px] font-semibold tracking-wide leading-none mb-1">{greeting}</p>
+          <p className="text-white font-black text-[17px] truncate leading-tight tracking-tight">{user.name}</p>
+          <div className="flex items-center gap-1 mt-1">
+            <Clock size={9} className="text-white/35" />
+            <span className="text-white/35 text-[9px] font-medium">Franja 10:00–12:00</span>
           </div>
         </div>
+
+        {/* Points pill — standalone, prominent */}
+        <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
+          <div className="flex items-center gap-1 bg-gold-400/20 border border-gold-400/30 rounded-xl px-2.5 py-1.5">
+            <Star size={11} fill="#fbbf24" color="#fbbf24" strokeWidth={0} />
+            <span className="text-gold-300 font-black text-sm tabular-nums">150</span>
+          </div>
+          <p className="text-[8px] text-white/30 font-semibold tracking-wide">puntos</p>
+        </div>
+
         {fastPassActive && (
-          <div className="bg-gold-400 text-brand-900 text-[9px] font-black px-2 py-1
-                          rounded-full tracking-wide flex-shrink-0">
-            ⚡ FP
+          <div className="absolute top-2.5 right-2.5 bg-gold-400 text-brand-900 text-[9px] font-black
+                          px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-sm">
+            <ZapIcon size={9} strokeWidth={3} /> FP
           </div>
         )}
       </div>
@@ -831,7 +838,7 @@ function FastPassConfirmed({ user, fastPass, setQr }) {
           </div>
           <div className="space-y-2">
             {ATTRACTIONS.map(a => {
-              const Icon    = ATTR_ICON[a.id] || Waves;
+              const Icon    = ATTR_ICON[a.id] || WavePoolIcon;
               const enabled = slot && accessible.includes(a.id);
               return (
                 <button key={a.id} disabled={!enabled}
@@ -3173,12 +3180,90 @@ function Dashboard({ user, reservations, onReserve, onLogout, fastPass, setFastP
 }
 
 // ─── ATTRACTION ICON MAP ──────────────────────────────────────────────────────
+// ─── CUSTOM ATTRACTION ICONS (specific SVG per attraction type) ───────────────
+const MegatoboganIcon = ({ size = 24, strokeWidth = 1.8, style: s = {} }) => {
+  const c = s.color || "currentColor";
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="7" cy="3" r="1.5" fill={c} />
+      <path d="M7 4.5 L7 13 Q7 21 20 21" stroke={c} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round"/>
+      <line x1="2" y1="8"    x2="5.5" y2="8"   stroke={c} strokeWidth={strokeWidth * 0.7} strokeLinecap="round" opacity="0.55"/>
+      <line x1="2" y1="11.5" x2="5"   y2="11.5" stroke={c} strokeWidth={strokeWidth * 0.6} strokeLinecap="round" opacity="0.35"/>
+      <line x1="2" y1="15"   x2="4.5" y2="15"   stroke={c} strokeWidth={strokeWidth * 0.5} strokeLinecap="round" opacity="0.2"/>
+    </svg>
+  );
+};
+const FlashIcon = ({ size = 24, strokeWidth = 1.8, style: s = {} }) => {
+  const c = s.color || "currentColor";
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M5 4 Q15 4 15 12 Q15 20 22 20" stroke={c} strokeWidth={strokeWidth} strokeLinecap="round"/>
+      <polyline points="14,2 11,9 14,9 11,16" stroke={c} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+};
+const SpiralIcon = ({ size = 24, strokeWidth = 1.8, style: s = {} }) => {
+  const c = s.color || "currentColor";
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M12 12 Q19 8 19 14 Q19 20 12 20 Q5 20 5 14 Q5 8 12 8 Q17 8 18 11" stroke={c} strokeWidth={strokeWidth} strokeLinecap="round" fill="none"/>
+      <path d="M12 12 Q7 9 7 5 Q7 3 10 3" stroke={c} strokeWidth={strokeWidth * 0.75} strokeLinecap="round" opacity="0.5"/>
+    </svg>
+  );
+};
+const RainForestIcon = ({ size = 24, strokeWidth = 1.8, style: s = {} }) => {
+  const c = s.color || "currentColor";
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M12 2 L19 10 L15.5 10 L20 17 L13 17 L13 22 L11 22 L11 17 L4 17 L8.5 10 L5 10 Z"
+            stroke={c} strokeWidth={strokeWidth} strokeLinejoin="round" fill={c + "20"}/>
+      <line x1="7"  y1="22" x2="7"  y2="24" stroke={c} strokeWidth={strokeWidth} strokeLinecap="round" opacity="0.65"/>
+      <line x1="12" y1="22" x2="12" y2="24" stroke={c} strokeWidth={strokeWidth} strokeLinecap="round" opacity="0.45"/>
+      <line x1="17" y1="22" x2="17" y2="24" stroke={c} strokeWidth={strokeWidth} strokeLinecap="round" opacity="0.25"/>
+    </svg>
+  );
+};
+const WavePoolIcon = ({ size = 24, strokeWidth = 1.8, style: s = {} }) => {
+  const c = s.color || "currentColor";
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="19" cy="5" r="2" stroke={c} strokeWidth={strokeWidth * 0.8} opacity="0.6"/>
+      <path d="M2 11 Q5 7 8 11 Q11 15 14 11 Q17 7 20 11 Q22 13 22 13" stroke={c} strokeWidth={strokeWidth} strokeLinecap="round"/>
+      <path d="M2 16 Q5 12 8 16 Q11 20 14 16 Q17 12 20 16" stroke={c} strokeWidth={strokeWidth * 0.75} strokeLinecap="round" opacity="0.5"/>
+    </svg>
+  );
+};
+const TornadoFunnelIcon = ({ size = 24, strokeWidth = 1.8, style: s = {} }) => {
+  const c = s.color || "currentColor";
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M3 4 L21 4 Q19 9 16 12 Q13 15 14 21 L10 21 Q11 15 8 12 Q5 9 3 4 Z"
+            stroke={c} strokeWidth={strokeWidth} strokeLinejoin="round" fill={c + "18"}/>
+      <path d="M7 8.5 Q12 7 17 8.5" stroke={c} strokeWidth={strokeWidth * 0.75} strokeLinecap="round" opacity="0.6"/>
+      <path d="M9 12 Q12 11 15 12"   stroke={c} strokeWidth={strokeWidth * 0.6}  strokeLinecap="round" opacity="0.4"/>
+    </svg>
+  );
+};
+const LazyRiverIcon = ({ size = 24, strokeWidth = 1.8, style: s = {} }) => {
+  const c = s.color || "currentColor";
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M2 8  Q6 6  10 8  Q14 10 18 8  Q20 7 22 8"  stroke={c} strokeWidth={strokeWidth} strokeLinecap="round"/>
+      <path d="M2 12 Q6 10 10 12 Q14 14 18 12 Q20 11 22 12" stroke={c} strokeWidth={strokeWidth} strokeLinecap="round" opacity="0.65"/>
+      <path d="M2 16 Q6 14 10 16 Q14 18 18 16 Q20 15 22 16" stroke={c} strokeWidth={strokeWidth * 0.7} strokeLinecap="round" opacity="0.35"/>
+      <circle cx="12" cy="12" r="4.5" stroke={c} strokeWidth={strokeWidth * 0.7} opacity="0.18"/>
+    </svg>
+  );
+};
+
 const ATTR_ICON = {
-  megatobogan:   Waves,
-  "bosque-lluvia": TreePine,
-  "piscina-olas":  Droplets,
-  tornado:         Tornado,
-  "rio-lento":     Navigation,
+  megatobogan:     MegatoboganIcon,
+  "tobogan-flash": FlashIcon,
+  "tobogan-placi": SpiralIcon,
+  "bosque-lluvia": RainForestIcon,
+  "piscina-olas":  WavePoolIcon,
+  tornado:         TornadoFunnelIcon,
+  "rio-lento":     LazyRiverIcon,
 };
 
 // ─── useCooldown ──────────────────────────────────────────────────────────────
@@ -3248,7 +3333,7 @@ function QRModal({ title, subtitle, code, onClose }) {
 function DetailModal({ attraction: a, reservation, waiting, onReserve, onClose }) {
   const rem = useCooldown(reservation);
   const cooling = reservation && rem > 0;
-  const Icon = ATTR_ICON[a.id] || Waves;
+  const Icon = ATTR_ICON[a.id] || WavePoolIcon;
   return (
     <div className="fixed inset-0 bg-black/50 z-40 flex items-end animate-fade-in"
          onClick={onClose}>
@@ -3307,55 +3392,76 @@ function DetailModal({ attraction: a, reservation, waiting, onReserve, onClose }
 }
 
 // ─── ATTRACTION CARD ──────────────────────────────────────────────────────────
-function AttractionCard({ attraction: a, reservation, waiting, onReserve, onDetail }) {
-  const rem = useCooldown(reservation);
+function AttractionCard({ attraction: a, reservation, waiting, onReserve, onDetail, idx = 0 }) {
+  const rem     = useCooldown(reservation);
   const cooling = reservation && rem > 0;
-  const pct = reservation ? Math.min(100, ((Date.now() - reservation.ts) / COOLDOWN_MS) * 100) : 0;
-  const Icon = ATTR_ICON[a.id] || Waves;
+  const pct     = reservation ? Math.min(100, ((Date.now() - reservation.ts) / COOLDOWN_MS) * 100) : 0;
+  const Icon    = ATTR_ICON[a.id] || WavePoolIcon;
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      {/* Color accent bar */}
-      <div className="h-1 w-full" style={{ background: a.color }} />
+    <div
+      className="bg-white rounded-2xl overflow-hidden animate-slide-up"
+      style={{
+        animationDelay: `${idx * 65}ms`,
+        boxShadow: "0 2px 14px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)",
+        border: "1px solid rgba(0,0,0,0.05)",
+      }}
+    >
+      {/* Gradient accent strip */}
+      <div className="h-1.5 w-full" style={{ background: `linear-gradient(90deg, ${a.color}, ${a.color}66)` }} />
+
       <div className="p-4 flex items-center gap-3">
-        {/* Icon */}
+        {/* Icon — tap opens detail */}
         <button
           onClick={() => onDetail(a)}
-          className="w-13 h-13 w-[52px] h-[52px] rounded-xl flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform"
+          className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform"
           style={{ background: a.bg }}>
-          <Icon size={24} strokeWidth={1.8} style={{ color: a.color }} />
+          <Icon size={26} strokeWidth={1.8} style={{ color: a.color }} />
         </button>
-        {/* Info */}
+
+        {/* Info block */}
         <div className="flex-1 min-w-0" onClick={() => onDetail(a)}>
-          <p className="font-bold text-gray-900 text-sm leading-tight">{a.name}</p>
+          <p className="font-black text-gray-900 text-sm leading-tight">{a.name}</p>
+
           <div className="flex items-center gap-3 mt-1">
-            <span className="flex items-center gap-1 text-[11px] text-gray-400">
+            <span className="flex items-center gap-1 text-[11px] text-gray-400 font-medium">
               <Clock size={10} strokeWidth={2} /> {a.time}
             </span>
-            <span className="flex items-center gap-1 text-[11px] text-gray-400">
-              <Users size={10} strokeWidth={2} /> {waiting} esperando
+            <span className="flex items-center gap-1 text-[11px] font-bold"
+                  style={{ color: a.color }}>
+              <Users size={10} strokeWidth={2} /> {waiting} en fila
             </span>
           </div>
-          {/* Cooldown progress bar */}
+
+          {/* Cooldown gradient bar + countdown text */}
           {cooling && (
-            <div className="mt-1.5 h-1 bg-gray-100 rounded-full overflow-hidden w-full">
-              <div className="h-full bg-amber-400 rounded-full transition-all"
-                   style={{ width: `${pct}%` }} />
+            <div className="mt-2">
+              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all"
+                     style={{
+                       width: `${pct}%`,
+                       background: "linear-gradient(90deg, #fbbf24, #f97316)",
+                     }} />
+              </div>
+              <p className="text-[9px] text-amber-500 font-bold mt-0.5">{fmtCountdown(rem)} restantes</p>
             </div>
           )}
         </div>
+
         {/* Action */}
         <div className="flex-shrink-0">
           {cooling ? (
-            <div className="text-center min-w-[72px]">
-              <p className="text-[9px] font-bold text-amber-500 mb-0.5">COOLDOWN</p>
-              <p className="font-mono text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5">
-                {fmtCountdown(rem)}
-              </p>
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-center min-w-[76px]">
+              <p className="text-[8px] font-black text-amber-500 tracking-widest uppercase mb-0.5">Espera</p>
+              <p className="font-mono text-[11px] font-black text-amber-700">{fmtCountdown(rem)}</p>
             </div>
           ) : (
             <button
               onClick={() => onReserve(a)}
-              className="bg-brand-600 hover:bg-brand-700 active:scale-95 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl shadow-sm shadow-brand-200 transition-all">
+              className="text-white text-xs font-black px-4 py-2.5 rounded-xl active:scale-90 transition-all"
+              style={{
+                background: `linear-gradient(135deg, ${a.color}, ${a.color}bb)`,
+                boxShadow: `0 4px 14px ${a.color}44`,
+              }}>
               Reservar
             </button>
           )}
@@ -3389,16 +3495,22 @@ function AttractionsTab({ reservations, onReserve, onToast }) {
 
   return (
     <div className="px-4 py-4 space-y-3 pb-6">
-      {/* Stats row */}
+      {/* Stats row — colored cards with icons + stagger */}
       <div className="grid grid-cols-3 gap-2">
         {[
-          { label: "Reservas",     value: reservations.length, color: "text-brand-600" },
-          { label: "Disponibles",  value: ATTRACTIONS.length - coolingCount, color: "text-emerald-600" },
-          { label: "En cooldown",  value: coolingCount, color: "text-amber-500" },
-        ].map(s => (
-          <div key={s.label} className="bg-white rounded-xl p-2.5 text-center shadow-sm border border-gray-100">
-            <p className={`text-xl font-black ${s.color}`}>{s.value}</p>
-            <p className="text-gray-400 text-[9px] font-semibold leading-tight mt-0.5">{s.label}</p>
+          { label: "Reservas",    value: reservations.length,              Icon: Ticket,       color: "#1648b8", bg: "#eff6ff", border: "#bfdbfe" },
+          { label: "Disponibles", value: ATTRACTIONS.length - coolingCount, Icon: CheckCircle2, color: "#059669", bg: "#ecfdf5", border: "#6ee7b7" },
+          { label: "En cooldown", value: coolingCount,                     Icon: Timer,        color: "#d97706", bg: "#fffbeb", border: "#fde68a" },
+        ].map((s, i) => (
+          <div key={s.label}
+               className="rounded-2xl p-3 text-center border animate-pop-in"
+               style={{ background: s.bg, borderColor: s.border, animationDelay: `${i * 90}ms` }}>
+            <div className="w-7 h-7 rounded-xl flex items-center justify-center mx-auto mb-2"
+                 style={{ background: s.color + "22" }}>
+              <s.Icon size={14} style={{ color: s.color }} strokeWidth={2.5} />
+            </div>
+            <p className="text-2xl font-black tabular-nums" style={{ color: s.color }}>{s.value}</p>
+            <p className="text-[9px] font-bold text-gray-400 leading-tight mt-0.5">{s.label}</p>
           </div>
         ))}
       </div>
@@ -3415,11 +3527,12 @@ function AttractionsTab({ reservations, onReserve, onToast }) {
         Atracciones disponibles
       </p>
 
-      {ATTRACTIONS.map(a => {
+      {ATTRACTIONS.map((a, idx) => {
         const res = [...reservations].filter(r => r.attractionId === a.id).sort((x,y) => y.ts - x.ts)[0];
         return (
           <AttractionCard
             key={a.id}
+            idx={idx}
             attraction={a}
             reservation={res}
             waiting={waitCounts[a.id]}
