@@ -1241,6 +1241,118 @@ function MapInfoModal({ pin, onClose }) {
   );
 }
 
+// ─── MAP STATUS BOARD (non-reservable pins) ──────────────────────────────────
+function MapStatusModal({ pin, waitData, onClose, onOpenMenu }) {
+  const { Icon } = pin;
+  const isLive        = !!waitData;
+  const displayLine   = waitData?.currentLine   ?? pin.currentLine   ?? 0;
+  const displayWait   = waitData?.estimatedWait ?? pin.estimatedWait ?? 0;
+  const hasData       = displayLine > 0 || displayWait > 0;
+
+  // Colour ramp for wait time
+  const waitColor = displayWait >= 20
+    ? { bg:"#fef2f2", border:"#fecaca", text:"#b91c1c", label:"#ef4444" }
+    : displayWait >= 10
+      ? { bg:"#fffbeb", border:"#fde68a", text:"#b45309", label:"#f59e0b" }
+      : { bg:"#ecfdf5", border:"#a7f3d0", text:"#065f46", label:"#10b981" };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-40 flex items-end animate-fade-in"
+         onClick={onClose}>
+      <div className="bg-white w-full rounded-t-3xl shadow-2xl animate-slide-up"
+           onClick={e => e.stopPropagation()}>
+
+        {/* Handle */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 bg-gray-200 rounded-full" />
+        </div>
+
+        <div className="px-5 pt-3 pb-8">
+          {/* Header */}
+          <div className="flex items-start gap-3 mb-5">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
+                 style={{ background: pin.color + "18" }}>
+              <Icon size={26} style={{ color: pin.color }} strokeWidth={1.8} />
+            </div>
+            <div className="flex-1 min-w-0 pt-0.5">
+              <p className="font-black text-gray-900 text-xl leading-tight">{pin.label}</p>
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full"
+                      style={{ background: pin.color + "22", color: pin.color }}>
+                  {TYPE_LABEL[pin.type]}
+                </span>
+                {isLive && (
+                  <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
+                    Datos en vivo
+                  </span>
+                )}
+              </div>
+            </div>
+            <button onClick={onClose}
+              className="w-9 h-9 rounded-xl bg-gray-100 text-gray-400 flex items-center justify-center active:scale-90 transition-transform flex-shrink-0 mt-0.5">
+              <X size={16} strokeWidth={2.5} />
+            </button>
+          </div>
+
+          {/* Description */}
+          <p className="text-sm text-gray-500 font-medium leading-relaxed mb-5">{pin.desc}</p>
+
+          {/* Status cards */}
+          {hasData && (
+            <div className="grid grid-cols-2 gap-3 mb-5">
+              {/* People card */}
+              <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-4 flex flex-col items-center">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Users size={12} strokeWidth={2.5} className="text-amber-500" />
+                  <p className="text-[9px] font-black text-amber-500 tracking-widest uppercase">Personas en fila</p>
+                </div>
+                <p className="text-5xl font-black text-amber-700 tabular-nums leading-none">{displayLine}</p>
+                <p className="text-[9px] text-amber-400 font-semibold mt-1.5">personas</p>
+              </div>
+
+              {/* Wait card — colour-coded */}
+              <div className="rounded-2xl px-4 py-4 flex flex-col items-center border"
+                   style={{ background: waitColor.bg, borderColor: waitColor.border }}>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Clock size={12} strokeWidth={2.5} style={{ color: waitColor.label }} />
+                  <p className="text-[9px] font-black tracking-widest uppercase"
+                     style={{ color: waitColor.label }}>Espera estimada</p>
+                </div>
+                <p className="text-5xl font-black tabular-nums leading-none"
+                   style={{ color: waitColor.text }}>{displayWait}</p>
+                <p className="text-[9px] font-semibold mt-1.5"
+                   style={{ color: waitColor.label }}>minutos</p>
+              </div>
+            </div>
+          )}
+
+          {/* Live refresh notice */}
+          {isLive && (
+            <p className="text-center text-[10px] text-gray-400 font-medium mb-5">
+              Se actualiza cada 30 s · Datos simulados en tiempo real
+            </p>
+          )}
+
+          {/* CTA: menu for food pins */}
+          {pin.type === "food" && pin.restId && (
+            <button onClick={onOpenMenu}
+              className="w-full mb-3 py-4 rounded-2xl font-bold text-sm text-white active:scale-[0.98] transition-all shadow-lg"
+              style={{ background: pin.color, boxShadow: `0 8px 20px ${pin.color}44` }}>
+              Ver Menú Completo
+            </button>
+          )}
+
+          <button onClick={onClose}
+            className="w-full bg-gray-900 active:bg-gray-800 active:scale-[0.98] text-white font-bold py-4 rounded-2xl text-sm transition-all">
+            Entendido
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── COOLDOWN MINI TIMER ──────────────────────────────────────────────────────
 function CooldownMini({ cooldownUntil }) {
   const [now, setNow] = useState(Date.now());
@@ -2157,7 +2269,8 @@ function MapTab({ user, companions, userCooldown, onGroupReserve }) {
 
   const handlePin = useCallback((e, pin) => {
     e.stopPropagation();
-    setSelected(p => p?.id === pin.id ? null : pin);
+    setSelected(pin);
+    setModal(pin.reservable ? "book" : "status");
   }, []);
 
   const FILTERS = [
@@ -2363,33 +2476,19 @@ function MapTab({ user, companions, userCooldown, onGroupReserve }) {
                 )}
               </div>
             </div>
-            {/* CTA based on pin type */}
-            {selected.type === "attraction" && selected.reservable && (
+            {/* CTA — single action per pin type */}
+            {selected.reservable ? (
               <button onPointerDown={e => e.stopPropagation()}
                 onClick={e => { e.stopPropagation(); setModal("book"); }}
                 className="flex-shrink-0 bg-brand-600 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg active:scale-95 transition-all">
                 Reservar
               </button>
-            )}
-            {selected.type === "food" && selected.restId && (
+            ) : (
               <button onPointerDown={e => e.stopPropagation()}
-                onClick={e => { e.stopPropagation(); setModal("menu"); }}
-                className="flex-shrink-0 bg-orange-500 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg active:scale-95 transition-all">
-                Ver Menú
-              </button>
-            )}
-            {selected.hasQueue && !selected.reservable && (
-              <button onPointerDown={e => e.stopPropagation()}
-                onClick={e => { e.stopPropagation(); setModal("wait"); }}
-                className="flex-shrink-0 bg-amber-500 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg active:scale-95 transition-all">
-                Ver Fila
-              </button>
-            )}
-            {!selected.reservable && !selected.hasQueue && selected.type !== "food" && (
-              <button onPointerDown={e => e.stopPropagation()}
-                onClick={e => { e.stopPropagation(); setModal("info"); }}
-                className="flex-shrink-0 bg-gray-800 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg active:scale-95 transition-all">
-                Info
+                onClick={e => { e.stopPropagation(); setModal("status"); }}
+                className="flex-shrink-0 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg active:scale-95 transition-all"
+                style={{ background: selected.color }}>
+                Ver Estado
               </button>
             )}
             <button onPointerDown={e => e.stopPropagation()}
@@ -2423,17 +2522,12 @@ function MapTab({ user, companions, userCooldown, onGroupReserve }) {
           onClose={() => setModal(null)}
         />
       )}
-      {modal === "wait" && selected && (
-        <MapWaitModal
+      {modal === "status" && selected && (
+        <MapStatusModal
           pin={selected}
           waitData={waitTimes[selected.id]}
           onClose={() => setModal(null)}
-        />
-      )}
-      {modal === "info" && selected && (
-        <MapInfoModal
-          pin={selected}
-          onClose={() => setModal(null)}
+          onOpenMenu={() => setModal("menu")}
         />
       )}
       {redemption && (
