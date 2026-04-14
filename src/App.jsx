@@ -2548,7 +2548,14 @@ function MapTab({ user, companions, userCooldown, onGroupReserve }) {
 }
 
 // ─── FOOD TAB ─────────────────────────────────────────────────────────────────
-const REST_ICONS = { cascada:"🌊", rancho:"🔥", pizzalago:"🍕" };
+const REST_CONFIG = {
+  cascada:          { Icon: Droplets,        color: "#0891b2", bg: "#ecfeff" },
+  rancho:           { Icon: Flame,           color: "#d97706", bg: "#fffbeb" },
+  pizzalago:        { Icon: UtensilsCrossed, color: "#dc2626", bg: "#fef2f2" },
+  mirador:          { Icon: Star,            color: "#92400e", bg: "#fef3c7" },
+  "piscilago-rest": { Icon: Utensils,        color: "#0369a1", bg: "#eff6ff" },
+  "kiosco-a":       { Icon: Package,         color: "#65a30d", bg: "#f7fee7" },
+};
 
 function FoodTab({ onToast }) {
   const [cart, setCart]       = useState({});
@@ -2587,59 +2594,105 @@ function FoodTab({ onToast }) {
           Restaurantes
         </p>
 
-        {RESTAURANTS.map(rest => (
-          <div key={rest.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            {/* Restaurant header */}
-            <button
-              onClick={() => setOpen(open === rest.id ? null : rest.id)}
-              className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-gray-50 transition-colors">
-              <div className="w-11 h-11 rounded-xl bg-brand-50 flex items-center justify-center text-2xl flex-shrink-0">
-                {REST_ICONS[rest.id]}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-gray-900 text-sm">{rest.name}</p>
-                <p className="text-xs text-gray-400 truncate">{rest.desc}</p>
-              </div>
-              <div className={`text-gray-400 transition-transform ${open === rest.id ? "rotate-180" : ""}`}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <polyline points="6 9 12 15 18 9"/>
-                </svg>
-              </div>
-            </button>
+        {RESTAURANTS.map((rest, ridx) => {
+          const cfg     = REST_CONFIG[rest.id] ?? { Icon: UtensilsCrossed, color: "#6b7280", bg: "#f9fafb" };
+          const isOpen  = open === rest.id;
+          const { Icon: RIcon, color, bg } = cfg;
+          return (
+            <div
+              key={rest.id}
+              className="bg-white rounded-2xl overflow-hidden animate-slide-up relative"
+              style={{
+                animationDelay: `${ridx * 55}ms`,
+                boxShadow: "0 2px 14px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)",
+              }}
+            >
+              {/* Left accent + header row */}
+              <button
+                onClick={() => setOpen(isOpen ? null : rest.id)}
+                className="w-full flex items-center gap-3 px-4 py-4 text-left transition-colors"
+                style={{ background: isOpen ? color + "08" : "transparent" }}
+              >
+                {/* Left color strip */}
+                <div
+                  className="absolute left-0 top-0 bottom-0 w-[3.5px] rounded-l-2xl"
+                  style={{ background: color }}
+                />
 
-            {/* Menu items */}
-            {open === rest.id && (
-              <div className="border-t border-gray-100 divide-y divide-gray-50">
-                {rest.items.map(item => {
-                  const qty = cart[item.id]?.qty || 0;
-                  return (
-                    <div key={item.id} className="flex items-center gap-3 px-4 py-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-800">{item.name}</p>
-                        <p className="text-xs font-bold text-brand-600 mt-0.5">{fmtCOP(item.price)}</p>
+                {/* Icon square */}
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: bg }}
+                >
+                  <RIcon size={22} strokeWidth={1.8} style={{ color }} />
+                </div>
+
+                {/* Text */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-black text-gray-900 text-[15px] leading-tight">{rest.name}</p>
+                  <p className="text-[11px] text-gray-400 font-medium mt-0.5 truncate">{rest.desc}</p>
+                </div>
+
+                {/* Chevron */}
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all"
+                  style={{
+                    background: isOpen ? color + "18" : "#f3f4f6",
+                    transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                  }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                       stroke={isOpen ? color : "#9ca3af"} strokeWidth="2.8">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </div>
+              </button>
+
+              {/* Menu items */}
+              {isOpen && (
+                <div style={{ borderTop: `1px solid ${color}22` }}>
+                  {rest.items.map((item, iidx) => {
+                    const qty = cart[item.id]?.qty || 0;
+                    return (
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-3 px-4 py-3"
+                        style={{ borderBottom: iidx < rest.items.length - 1 ? "1px solid #f3f4f6" : "none" }}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-800 leading-tight">{item.name}</p>
+                          <p
+                            className="text-[11px] font-black mt-0.5"
+                            style={{ color }}
+                          >
+                            {fmtCOP(item.price)}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          {qty > 0 && (
+                            <>
+                              <button onClick={() => sub(item)}
+                                className="w-7 h-7 rounded-lg flex items-center justify-center font-black text-base active:scale-90 transition-transform"
+                                style={{ background: color + "15", color }}>
+                                −
+                              </button>
+                              <span className="text-sm font-black text-gray-900 w-5 text-center tabular-nums">{qty}</span>
+                            </>
+                          )}
+                          <button onClick={() => add(item)}
+                            className="w-7 h-7 rounded-lg text-white font-black text-base flex items-center justify-center active:scale-90 transition-transform"
+                            style={{ background: color, boxShadow: `0 2px 8px ${color}44` }}>
+                            +
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {qty > 0 ? (
-                          <>
-                            <button onClick={() => sub(item)}
-                              className="w-7 h-7 rounded-lg bg-red-50 border border-red-200 text-red-500 font-black text-sm flex items-center justify-center active:scale-95 transition-all">
-                              −
-                            </button>
-                            <span className="text-sm font-black text-gray-900 w-4 text-center">{qty}</span>
-                          </>
-                        ) : null}
-                        <button onClick={() => add(item)}
-                          className="w-7 h-7 rounded-lg bg-brand-600 text-white font-black text-sm flex items-center justify-center active:scale-95 transition-all shadow-sm">
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        ))}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Floating cart */}
