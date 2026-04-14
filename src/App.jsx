@@ -2041,21 +2041,73 @@ function MapRedemptionSheet({ data, onClose }) {
 
 // ─── MAP TAB ──────────────────────────────────────────────────────────────────
 const MAP_IMG_SRC = import.meta.env.BASE_URL + "assets/mapa_detallado.jpg";
-const SCALE_MIN = 0.8;
+const SCALE_MIN = 1;
 const SCALE_MAX = 4;
 
 function MapTab({ user, companions, userCooldown, onGroupReserve }) {
   const [scale, setScale]         = useState(1);
   const [offset, setOffset]       = useState({ x: 0, y: 0 });
   const [imgOk, setImgOk]         = useState(true);
+  const [imgNat, setImgNat]       = useState({ w: 0, h: 0 });
+  const [vpSize, setVpSize]       = useState({ w: 0, h: 0 });
   const [filter, setFilter]       = useState("all");
   const [selected, setSelected]   = useState(null);
   const [modal, setModal]         = useState(null);  // "book"|"menu"|"wait"|"info"
   const [redemption, setRedemption] = useState(null);
   const waitTimes = useWaitTimes();
 
-  const dragging = useRef(false);
-  const lastPos  = useRef({ x: 0, y: 0 });
+  const dragging    = useRef(false);
+  const lastPos     = useRef({ x: 0, y: 0 });
+  const vpRef       = useRef(null);
+  const scaleRef    = useRef(1);
+  const layerDimRef = useRef({ w: 300, h: 200 });
+
+  // Measure viewport and watch for resize
+  useEffect(() => {
+    const el = vpRef.current;
+    if (!el) return;
+    setVpSize({ w: el.clientWidth, h: el.clientHeight });
+    const ro = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      setVpSize({ w: width, h: height });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Layer dimensions: image scaled to "contain" inside the viewport at scale=1
+  const { layerW, layerH } = useMemo(() => {
+    const { w: iW, h: iH } = imgNat;
+    const { w: vW, h: vH } = vpSize;
+    if (!iW || !iH || !vW || !vH) {
+      const fallback = { w: vW || 300, h: vH || 200 };
+      layerDimRef.current = fallback;
+      return { layerW: fallback.w, layerH: fallback.h };
+    }
+    const r = Math.min(vW / iW, vH / iH);
+    const lW = Math.round(iW * r);
+    const lH = Math.round(iH * r);
+    layerDimRef.current = { w: lW, h: lH };
+    return { layerW: lW, layerH: lH };
+  }, [imgNat, vpSize]);
+
+  const onImgLoad = useCallback((e) => {
+    setImgNat({ w: e.target.naturalWidth, h: e.target.naturalHeight });
+  }, []);
+
+  // Clamp offset so image never drifts fully off screen
+  const clamp = (off) => {
+    const vp = vpRef.current;
+    if (!vp) return off;
+    const { w: lW, h: lH } = layerDimRef.current;
+    const s = scaleRef.current;
+    const maxX = Math.max(0, (lW * s - vp.clientWidth)  / 2);
+    const maxY = Math.max(0, (lH * s - vp.clientHeight) / 2);
+    return {
+      x: Math.min(maxX, Math.max(-maxX, off.x)),
+      y: Math.min(maxY, Math.max(-maxY, off.y)),
+    };
+  };
 
   const onPointerDown = useCallback((e) => {
     dragging.current = true;
@@ -2068,15 +2120,26 @@ function MapTab({ user, companions, userCooldown, onGroupReserve }) {
     const dx = e.clientX - lastPos.current.x;
     const dy = e.clientY - lastPos.current.y;
     lastPos.current = { x: e.clientX, y: e.clientY };
-    setOffset(p => ({ x: p.x + dx, y: p.y + dy }));
+    setOffset(prev => clamp({ x: prev.x + dx, y: prev.y + dy }));
   }, []);
 
   const onPointerUp = useCallback(() => { dragging.current = false; }, []);
 
-  const zoom = (delta) =>
-    setScale(s => Math.min(SCALE_MAX, Math.max(SCALE_MIN, +(s + delta).toFixed(2))));
+  const zoom = (delta) => {
+    setScale(s => {
+      const next = Math.min(SCALE_MAX, Math.max(SCALE_MIN, +(s + delta).toFixed(2)));
+      scaleRef.current = next;
+      return next;
+    });
+    setOffset(prev => clamp(prev));
+  };
 
-  const reset = () => { setScale(1); setOffset({ x: 0, y: 0 }); setSelected(null); };
+  const reset = () => {
+    scaleRef.current = 1;
+    setScale(1);
+    setOffset({ x: 0, y: 0 });
+    setSelected(null);
+  };
 
   const handlePin = useCallback((e, pin) => {
     e.stopPropagation();
@@ -2121,27 +2184,29 @@ function MapTab({ user, companions, userCooldown, onGroupReserve }) {
 
       {/* Map viewport */}
       <div
-        className="flex-1 mx-4 mb-2 rounded-2xl overflow-hidden border-2 border-brand-100 shadow-inner bg-sky-100 cursor-grab active:cursor-grabbing relative"
+        ref={vpRef}
+        className="flex-1 mx-4 mb-2 rounded-2xl overflow-hidden border-2 border-brand-100 shadow-inner bg-sky-100 cursor-grab active:cursor-grabbing relative flex items-center justify-center"
         style={{ minHeight: 280, touchAction: "none" }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerLeave={onPointerUp}
       >
-        {/* Transformable layer — image + pins move together */}
+        {/* Transformable layer — sized to image's contain dimensions so pins align correctly */}
         <div style={{
           transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
           transformOrigin: "50% 50%",
-          width: "100%", height: "100%",
-          position: "relative", willChange: "transform",
+          width: layerW, height: layerH,
+          position: "relative", flexShrink: 0, willChange: "transform",
         }}>
           {imgOk ? (
             <img src={MAP_IMG_SRC} alt="Mapa Piscilago" draggable={false}
+                 onLoad={onImgLoad}
                  onError={() => setImgOk(false)}
-                 className="absolute inset-0 w-full h-full object-cover" />
+                 className="w-full h-full block" />
           ) : (
-            <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full"
-                 xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+            <svg viewBox="0 0 100 100" className="w-full h-full"
+                 xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
               <rect width="100" height="100" fill="#bae6fd" />
               <ellipse cx="50" cy="50" rx="44" ry="42" fill="#bbf7d0" />
               <ellipse cx="48" cy="46" rx="36" ry="32" fill="#86efac" />
