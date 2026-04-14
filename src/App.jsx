@@ -1050,52 +1050,52 @@ function FastPassTab({ user, fastPass, setFastPass, onToast }) {
 // ─── MAP DATA ─────────────────────────────────────────────────────────────────
 // r=reservable, d=description, hq=hasQueue
 const MAP_PINS = [
-  // ── 7 RESERVABLE ATTRACTIONS ──────────────────────────────────────────────
-  { id:"megatob",    label:"Megatobogán",           type:"attraction",   x:24, y:63, Icon:Waves,          color:"#f97316", attrId:"megatobogan",   restId:null,          reservable:true,  hasQueue:false, desc:"Tobogán de alta velocidad con caída de 18 metros. Edad mínima 12 años." },
-  { id:"t-flash",    label:"Tobogán FlashFlash",    type:"attraction",   x:34, y:67, Icon:Flame,          color:"#7c3aed", attrId:"tobogan-flash",  restId:null,          reservable:true,  hasQueue:false, desc:"El tobogán más rápido del parque. Curvas cerradas y adrenalina total. +10 años." },
-  { id:"t-placi",    label:"Tobogán Plagilepis",    type:"attraction",   x:18, y:68, Icon:Wind,           color:"#be185d", attrId:"tobogan-placi",  restId:null,          reservable:true,  hasQueue:false, desc:"Tobogán doble espiral familiar. Se disfruta en pareja o en duo. +8 años." },
-  { id:"bosque",     label:"Bosque de la Lluvia",   type:"attraction",   x:14, y:45, Icon:TreePine,       color:"#16a34a", attrId:"bosque-lluvia",  restId:null,          reservable:true,  hasQueue:false, desc:"Área acuática con duchas tropicales, toboganes infantiles y zona de juegos. +5 años." },
-  { id:"piscola",    label:"Piscina de Olas",       type:"attraction",   x:52, y:55, Icon:Droplets,       color:"#0284c7", attrId:"piscina-olas",   restId:null,          reservable:true,  hasQueue:false, desc:"La icónica piscina de olas artificiales de Piscilago. Oleaje cada 20 min. +3 años." },
-  { id:"tornado",    label:"El Tornado",            type:"attraction",   x:40, y:58, Icon:Tornado,        color:"#dc2626", attrId:"tornado",         restId:null,          reservable:true,  hasQueue:false, desc:"Tobogán en embudo gigante. Sensación de gravedad cero. Máxima intensidad. +14 años." },
-  { id:"riolento",   label:"Río Lento",             type:"attraction",   x:28, y:50, Icon:Navigation,     color:"#0891b2", attrId:"rio-lento",      restId:null,          reservable:true,  hasQueue:false, desc:"Recorrido relajante de 400 m en llantas por el río del parque. Toda la familia." },
+  // ── 7 RESERVABLE ATTRACTIONS — gold ring treatment ─────────────────────────
+  { id:"megatob",    label:"Megatobogán",            type:"attraction",   x:24, y:63, Icon:Waves,           color:"#f97316", attrId:"megatobogan",    restId:null,           reservable:true,  hasQueue:false, desc:"Tobogán de alta velocidad con caída de 18 metros. Edad mínima 12 años." },
+  { id:"t-flash",    label:"Tobogán FlashFlash",     type:"attraction",   x:34, y:67, Icon:Flame,           color:"#7c3aed", attrId:"tobogan-flash",   restId:null,           reservable:true,  hasQueue:false, desc:"El tobogán más rápido del parque. Curvas cerradas y adrenalina total. +10 años." },
+  { id:"t-placi",    label:"Tobogán Plagilepis",     type:"attraction",   x:18, y:68, Icon:Wind,            color:"#be185d", attrId:"tobogan-placi",   restId:null,           reservable:true,  hasQueue:false, desc:"Tobogán doble espiral familiar. Se disfruta en pareja o en duo. +8 años." },
+  { id:"bosque",     label:"Bosque de la Lluvia",    type:"attraction",   x:14, y:45, Icon:TreePine,        color:"#16a34a", attrId:"bosque-lluvia",   restId:null,           reservable:true,  hasQueue:false, desc:"Área acuática con duchas tropicales, toboganes infantiles y zona de juegos. +5 años." },
+  { id:"piscola",    label:"Piscina de Olas",        type:"attraction",   x:52, y:55, Icon:Droplets,        color:"#0284c7", attrId:"piscina-olas",    restId:null,           reservable:true,  hasQueue:false, desc:"La icónica piscina de olas artificiales de Piscilago. Oleaje cada 20 min. +3 años." },
+  { id:"tornado",    label:"El Tornado",             type:"attraction",   x:40, y:58, Icon:Tornado,         color:"#dc2626", attrId:"tornado",          restId:null,           reservable:true,  hasQueue:false, desc:"Tobogán en embudo gigante. Sensación de gravedad cero. Máxima intensidad. +14 años." },
+  { id:"riolento",   label:"Río Lento",              type:"attraction",   x:28, y:50, Icon:Navigation,      color:"#0891b2", attrId:"rio-lento",       restId:null,           reservable:true,  hasQueue:false, desc:"Recorrido relajante de 400 m en llantas por el río del parque. Toda la familia." },
 
-  // ── FOOD / RESTAURANTES (6) ───────────────────────────────────────────────
-  { id:"cascada",    label:"La Cascada",            type:"food",         x:46, y:38, Icon:UtensilsCrossed,color:"#ea580c", attrId:null,              restId:"cascada",     reservable:false, hasQueue:false, desc:"Snacks, helados y bebidas tropicales." },
-  { id:"rancho",     label:"El Rancho",             type:"food",         x:30, y:76, Icon:UtensilsCrossed,color:"#b45309", attrId:null,              restId:"rancho",      reservable:false, hasQueue:false, desc:"Parrilla y carnes a la brasa estilo colombiano." },
-  { id:"pizza",      label:"PizzaLago",             type:"food",         x:58, y:30, Icon:UtensilsCrossed,color:"#dc2626", attrId:null,              restId:"pizzalago",   reservable:false, hasQueue:false, desc:"Pizzas artesanales y pastas frescas." },
-  { id:"mirador-r",  label:"Restaurante Mirador",  type:"food",         x:62, y:48, Icon:UtensilsCrossed,color:"#92400e", attrId:null,              restId:"mirador",     reservable:false, hasQueue:false, desc:"Vista panorámica y platos típicos colombianos." },
-  { id:"pisc-rest",  label:"Restaurant Piscilago", type:"food",         x:48, y:70, Icon:UtensilsCrossed,color:"#0369a1", attrId:null,              restId:"piscilago-rest",reservable:false,hasQueue:false, desc:"Comida rápida y bebidas frías junto a las piscinas." },
-  { id:"kiosco",     label:"Kiosco Comidas",        type:"food",         x:22, y:40, Icon:UtensilsCrossed,color:"#65a30d", attrId:null,              restId:"kiosco-a",    reservable:false, hasQueue:false, desc:"Snacks y bebidas al paso." },
+  // ── FOOD / RESTAURANTES (7) — live queue ──────────────────────────────────
+  { id:"cascada",    label:"La Cascada",             type:"food",         x:46, y:38, Icon:UtensilsCrossed, color:"#ea580c", attrId:null, restId:"cascada",          reservable:false, hasQueue:true,  lineMin:4,  lineMax:20,  waitMin:3,  waitMax:15,  currentLine:8,  estimatedWait:5,  desc:"Snacks, helados y bebidas tropicales." },
+  { id:"rancho",     label:"El Rancho",              type:"food",         x:30, y:76, Icon:UtensilsCrossed, color:"#b45309", attrId:null, restId:"rancho",           reservable:false, hasQueue:true,  lineMin:10, lineMax:40,  waitMin:8,  waitMax:25,  currentLine:22, estimatedWait:15, desc:"Parrilla y carnes a la brasa estilo colombiano." },
+  { id:"pizza",      label:"PizzaLago",              type:"food",         x:58, y:30, Icon:UtensilsCrossed, color:"#dc2626", attrId:null, restId:"pizzalago",        reservable:false, hasQueue:true,  lineMin:8,  lineMax:30,  waitMin:6,  waitMax:20,  currentLine:18, estimatedWait:12, desc:"Pizzas artesanales y pastas frescas." },
+  { id:"mirador-r",  label:"Restaurante Mirador",   type:"food",         x:62, y:48, Icon:UtensilsCrossed, color:"#92400e", attrId:null, restId:"mirador",          reservable:false, hasQueue:true,  lineMin:5,  lineMax:25,  waitMin:5,  waitMax:18,  currentLine:14, estimatedWait:10, desc:"Vista panorámica y platos típicos colombianos." },
+  { id:"pisc-rest",  label:"Restaurant Piscilago",  type:"food",         x:48, y:70, Icon:UtensilsCrossed, color:"#0369a1", attrId:null, restId:"piscilago-rest",   reservable:false, hasQueue:true,  lineMin:12, lineMax:45,  waitMin:10, waitMax:30,  currentLine:25, estimatedWait:18, desc:"Comida rápida y bebidas frías junto a las piscinas." },
+  { id:"kiosco",     label:"Kiosco Comidas",         type:"food",         x:22, y:40, Icon:UtensilsCrossed, color:"#65a30d", attrId:null, restId:"kiosco-a",         reservable:false, hasQueue:true,  lineMin:2,  lineMax:15,  waitMin:2,  waitMax:10,  currentLine:6,  estimatedWait:4,  desc:"Snacks y bebidas al paso." },
+  { id:"kiosco-b",   label:"Kiosco Helados",         type:"food",         x:38, y:72, Icon:UtensilsCrossed, color:"#ec4899", attrId:null, restId:"cascada",          reservable:false, hasQueue:true,  lineMin:5,  lineMax:25,  waitMin:4,  waitMax:15,  currentLine:12, estimatedWait:8,  desc:"Kiosco especializado en helados artesanales y paletas tropicales." },
 
-  // ── SERVICIOS / BAÑOS (7) ─────────────────────────────────────────────────
-  { id:"baño-a",     label:"Servicios / Baños A",  type:"restroom",     x:20, y:55, Icon:Users,          color:"#6b7280", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Baños y duchas con agua caliente. Acceso libre." },
-  { id:"baño-b",     label:"Servicios / Baños B",  type:"restroom",     x:46, y:64, Icon:Users,          color:"#6b7280", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Baños y duchas. Zona central del parque." },
-  { id:"baño-c",     label:"Servicios / Baños C",  type:"restroom",     x:58, y:40, Icon:Users,          color:"#6b7280", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Baños y cambiadores. Zona atracciones principales." },
-  { id:"vestuario",  label:"Vestuarios y Casilleros",type:"service",     x:10, y:68, Icon:Shirt,         color:"#4f46e5", attrId:null,              restId:null,          reservable:false, hasQueue:true,  waitMin:2, waitMax:12, desc:"Cambiadores, duchas privadas y alquiler de casilleros ($8.000/día)." },
-  { id:"prim-aux",   label:"Primeros Auxilios",    type:"help",         x:35, y:42, Icon:Heart,          color:"#e11d48", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Enfermería con médico en turno permanente. Servicio gratuito para todos los visitantes." },
-  { id:"salvaвид",   label:"Alquiler Salvavidas",  type:"service",      x:54, y:48, Icon:ShieldCheck,    color:"#2563eb", attrId:null,              restId:null,          reservable:false, hasQueue:true,  waitMin:1, waitMax:8,  desc:"Alquiler de salvavidas, flotadores y material acuático. ($5.000/ítem)." },
-  { id:"cajero",     label:"Cajero Automático",    type:"service",      x:12, y:80, Icon:CardIcon,       color:"#374151", attrId:null,              restId:null,          reservable:false, hasQueue:true,  waitMin:0, waitMax:5,  desc:"Cajero electrónico disponible 24 hrs. Redes Bancolombia, Davivienda y Aval." },
+  // ── SERVICIOS / BAÑOS (7) — live queue ────────────────────────────────────
+  { id:"baño-a",     label:"Servicios / Baños A",   type:"restroom",     x:20, y:55, Icon:Users,           color:"#6b7280", attrId:null, restId:null, reservable:false, hasQueue:true,  lineMin:2,  lineMax:12,  waitMin:2,  waitMax:8,   currentLine:5,  estimatedWait:3,  desc:"Baños y duchas con agua caliente. Acceso libre." },
+  { id:"baño-b",     label:"Servicios / Baños B",   type:"restroom",     x:46, y:64, Icon:Users,           color:"#6b7280", attrId:null, restId:null, reservable:false, hasQueue:true,  lineMin:3,  lineMax:18,  waitMin:3,  waitMax:10,  currentLine:8,  estimatedWait:5,  desc:"Baños y duchas. Zona central del parque." },
+  { id:"baño-c",     label:"Servicios / Baños C",   type:"restroom",     x:58, y:40, Icon:Users,           color:"#6b7280", attrId:null, restId:null, reservable:false, hasQueue:true,  lineMin:1,  lineMax:10,  waitMin:1,  waitMax:6,   currentLine:4,  estimatedWait:3,  desc:"Baños y cambiadores. Zona atracciones principales." },
+  { id:"vestuario",  label:"Vestuarios y Casilleros",type:"service",     x:10, y:68, Icon:Shirt,           color:"#4f46e5", attrId:null, restId:null, reservable:false, hasQueue:true,  lineMin:5,  lineMax:20,  waitMin:3,  waitMax:12,  currentLine:15, estimatedWait:8,  desc:"Cambiadores, duchas privadas y alquiler de casilleros ($8.000/día)." },
+  { id:"prim-aux",   label:"Primeros Auxilios",     type:"help",         x:35, y:42, Icon:Heart,           color:"#e11d48", attrId:null, restId:null, reservable:false, hasQueue:true,  lineMin:0,  lineMax:5,   waitMin:0,  waitMax:8,   currentLine:2,  estimatedWait:5,  desc:"Enfermería con médico en turno permanente. Servicio gratuito para todos los visitantes." },
+  { id:"salvavidas", label:"Alquiler Salvavidas",   type:"service",      x:54, y:48, Icon:ShieldCheck,     color:"#2563eb", attrId:null, restId:null, reservable:false, hasQueue:true,  lineMin:3,  lineMax:18,  waitMin:2,  waitMax:10,  currentLine:10, estimatedWait:5,  desc:"Alquiler de salvavidas, flotadores y material acuático. ($5.000/ítem)." },
+  { id:"cajero",     label:"Cajero Automático",     type:"service",      x:12, y:80, Icon:CardIcon,        color:"#374151", attrId:null, restId:null, reservable:false, hasQueue:true,  lineMin:0,  lineMax:10,  waitMin:0,  waitMax:6,   currentLine:6,  estimatedWait:4,  desc:"Cajero electrónico disponible 24 hrs. Redes Bancolombia, Davivienda y Aval." },
 
   // ── CONSERVACIÓN / ANIMALES (5) ───────────────────────────────────────────
-  { id:"venaditos",  label:"Venaditos",             type:"conservation", x:64, y:22, Icon:PawPrint,       color:"#92400e", attrId:null,              restId:null,          reservable:false, hasQueue:true,  waitMin:3, waitMax:15, desc:"Área de interacción con venaditos cola blanca. Puedes alimentarlos con supervisión." },
-  { id:"leones",     label:"Leones Marinos",        type:"conservation", x:72, y:33, Icon:PawPrint,       color:"#0369a1", attrId:null,              restId:null,          reservable:false, hasQueue:true,  waitMin:5, waitMax:20, desc:"Show de leones marinos. Funciones a las 11am, 2pm y 4pm. Aforo limitado." },
-  { id:"tortugas",   label:"Tortugas",              type:"conservation", x:68, y:40, Icon:PawPrint,       color:"#15803d", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Estanque de tortugas acuáticas y terrestres. Observación libre sin contacto directo." },
-  { id:"aves",       label:"Área de Aves Exóticas", type:"conservation", x:60, y:15, Icon:PawPrint,       color:"#7e22ce", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Aviario con más de 20 especies de aves colombianas. Recorrido guiado incluido." },
-  { id:"cocodrilo",  label:"Crocodrilo",            type:"conservation", x:70, y:38, Icon:PawPrint,       color:"#166534", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Exhibición de caimanes y cocodrilos. Observación desde pasarela de seguridad." },
+  { id:"venaditos",  label:"Venaditos",              type:"conservation", x:64, y:22, Icon:PawPrint,        color:"#92400e", attrId:null, restId:null, reservable:false, hasQueue:true,  lineMin:8,  lineMax:35,  waitMin:5,  waitMax:20,  currentLine:20, estimatedWait:10, desc:"Área de interacción con venaditos cola blanca. Puedes alimentarlos con supervisión." },
+  { id:"leones",     label:"Leones Marinos",         type:"conservation", x:72, y:33, Icon:PawPrint,        color:"#0369a1", attrId:null, restId:null, reservable:false, hasQueue:true,  lineMin:20, lineMax:80,  waitMin:10, waitMax:35,  currentLine:45, estimatedWait:20, desc:"Show de leones marinos. Funciones a las 11am, 2pm y 4pm. Aforo limitado." },
+  { id:"tortugas",   label:"Tortugas",               type:"conservation", x:68, y:40, Icon:PawPrint,        color:"#15803d", attrId:null, restId:null, reservable:false, hasQueue:false,                                                   currentLine:8,  estimatedWait:5,  desc:"Estanque de tortugas acuáticas y terrestres. Observación libre sin contacto directo." },
+  { id:"aves",       label:"Área de Aves Exóticas",  type:"conservation", x:60, y:15, Icon:PawPrint,        color:"#7e22ce", attrId:null, restId:null, reservable:false, hasQueue:false,                                                   currentLine:12, estimatedWait:8,  desc:"Aviario con más de 20 especies de aves colombianas. Recorrido guiado incluido." },
+  { id:"cocodrilo",  label:"Crocodrilo",              type:"conservation", x:70, y:38, Icon:PawPrint,        color:"#166534", attrId:null, restId:null, reservable:false, hasQueue:false,                                                   currentLine:6,  estimatedWait:4,  desc:"Exhibición de caimanes y cocodrilos. Observación desde pasarela de seguridad." },
 
-  // ── INFORMACIÓN / ENTRADA (3) ─────────────────────────────────────────────
-  { id:"entrada",    label:"Entrada / Taquilla",    type:"entrance",     x:8,  y:75, Icon:MapPin,         color:"#f59e0b", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Taquilla principal. Horario: 8am – 6pm. Presenta tu tiquete digital o físico." },
-  { id:"info",       label:"Punto de Información",  type:"info",         x:32, y:40, Icon:Info,           color:"#2563eb", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Información del parque, mapas impresos, atención al visitante y servicio al cliente." },
-  { id:"ayuda-b",    label:"Punto de Ayuda",        type:"help",         x:56, y:58, Icon:HelpCircle,     color:"#16a34a", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Punto de encuentro y ayuda al visitante. Personal bilingüe disponible." },
+  // ── INFORMACIÓN / ENTRADA (3) — sin fila ──────────────────────────────────
+  { id:"entrada",    label:"Entrada / Taquilla",     type:"entrance",     x:8,  y:75, Icon:MapPin,          color:"#f59e0b", attrId:null, restId:null, reservable:false, hasQueue:false, currentLine:0,  estimatedWait:0,  desc:"Taquilla principal. Horario: 8am – 6pm. Presenta tu tiquete digital o físico." },
+  { id:"info",       label:"Punto de Información",   type:"info",         x:32, y:40, Icon:Info,            color:"#2563eb", attrId:null, restId:null, reservable:false, hasQueue:false, currentLine:0,  estimatedWait:0,  desc:"Información del parque, mapas impresos, atención al visitante y servicio al cliente." },
+  { id:"ayuda-b",    label:"Punto de Ayuda",         type:"help",         x:56, y:58, Icon:HelpCircle,      color:"#16a34a", attrId:null, restId:null, reservable:false, hasQueue:false, currentLine:0,  estimatedWait:0,  desc:"Punto de encuentro y ayuda al visitante. Personal bilingüe disponible." },
 
   // ── OCIO / OTROS (7) ─────────────────────────────────────────────────────
-  { id:"camping",    label:"Zona Camping",          type:"leisure",      x:68, y:52, Icon:Tent,           color:"#78716c", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Zona de camping y picnic familiar. Mesas y zonas verdes disponibles todo el día." },
-  { id:"canchas",    label:"Canchas Múltiples",     type:"leisure",      x:64, y:60, Icon:Zap,            color:"#f59e0b", attrId:null,              restId:null,          reservable:false, hasQueue:true,  waitMin:5, waitMax:25, desc:"Canchas de vóley playa, micro-fútbol y zona de juegos colectivos." },
-  { id:"souvenir",   label:"Tienda Souvenir",       type:"service",      x:14, y:73, Icon:Package,        color:"#9333ea", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Recuerdos, camisetas, toallas y artículos de Piscilago. Pago con tarjeta o efectivo." },
-  { id:"parqueo",    label:"Parqueadero",           type:"service",      x:4,  y:85, Icon:Car,            color:"#374151", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Parqueadero vigilado. Motos: $5.000 · Carros: $12.000 · Buses: $25.000." },
-  { id:"conf",       label:"Sala de Conferencias",  type:"info",         x:24, y:33, Icon:Users,          color:"#6366f1", attrId:null,              restId:null,          reservable:false, hasQueue:false, desc:"Salón de eventos disponible para grupos. Capacidad 80 personas. Reserva previa." },
-  { id:"locker-b",   label:"Lockers Zona B",        type:"service",      x:42, y:48, Icon:Shirt,          color:"#64748b", attrId:null,              restId:null,          reservable:false, hasQueue:true,  waitMin:0, waitMax:6,  desc:"Casilleros digitales zona piscinas. Seguridad garantizada. ($8.000/día)." },
-  { id:"kiosco-b",   label:"Kiosco Helados",        type:"food",         x:38, y:72, Icon:UtensilsCrossed,color:"#ec4899", attrId:null,              restId:"cascada",     reservable:false, hasQueue:true,  waitMin:1, waitMax:10, desc:"Kiosco especializado en helados artesanales y paletas tropicales." },
+  { id:"camping",    label:"Zona Camping",           type:"leisure",      x:68, y:52, Icon:Tent,            color:"#78716c", attrId:null, restId:null, reservable:false, hasQueue:false, currentLine:0,  estimatedWait:0,  desc:"Zona de camping y picnic familiar. Mesas y zonas verdes disponibles todo el día." },
+  { id:"canchas",    label:"Canchas Múltiples",      type:"leisure",      x:64, y:60, Icon:Zap,             color:"#f59e0b", attrId:null, restId:null, reservable:false, hasQueue:true,  lineMin:10, lineMax:50,  waitMin:5,  waitMax:30,  currentLine:30, estimatedWait:15, desc:"Canchas de vóley playa, micro-fútbol y zona de juegos colectivos." },
+  { id:"souvenir",   label:"Tienda Souvenir",        type:"service",      x:14, y:73, Icon:Package,         color:"#9333ea", attrId:null, restId:null, reservable:false, hasQueue:true,  lineMin:2,  lineMax:15,  waitMin:2,  waitMax:10,  currentLine:5,  estimatedWait:3,  desc:"Recuerdos, camisetas, toallas y artículos de Piscilago. Pago con tarjeta o efectivo." },
+  { id:"parqueo",    label:"Parqueadero",            type:"service",      x:4,  y:85, Icon:Car,             color:"#374151", attrId:null, restId:null, reservable:false, hasQueue:false, currentLine:0,  estimatedWait:0,  desc:"Parqueadero vigilado. Motos: $5.000 · Carros: $12.000 · Buses: $25.000." },
+  { id:"conf",       label:"Sala de Conferencias",   type:"info",         x:24, y:33, Icon:Users,           color:"#6366f1", attrId:null, restId:null, reservable:false, hasQueue:false, currentLine:0,  estimatedWait:0,  desc:"Salón de eventos disponible para grupos. Capacidad 80 personas. Reserva previa." },
+  { id:"locker-b",   label:"Lockers Zona B",         type:"service",      x:42, y:48, Icon:Shirt,           color:"#64748b", attrId:null, restId:null, reservable:false, hasQueue:true,  lineMin:0,  lineMax:15,  waitMin:0,  waitMax:8,   currentLine:8,  estimatedWait:5,  desc:"Casilleros digitales zona piscinas. Seguridad garantizada. ($8.000/día)." },
 ];
 
 const TYPE_LABEL = {
@@ -1113,10 +1113,11 @@ const MAP_TIME_SLOTS = [
 // ─── WAIT TIMES HOOK ─────────────────────────────────────────────────────────
 function useWaitTimes() {
   const queuePins = MAP_PINS.filter(p => p.hasQueue);
+  const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
   const gen = () => Object.fromEntries(
     queuePins.map(p => [p.id, {
-      queue: Math.floor(Math.random() * ((p.waitMax ?? 20) - (p.waitMin ?? 1) + 1)) + (p.waitMin ?? 1),
-      wait:  Math.floor(Math.random() * ((p.waitMax ?? 20) - (p.waitMin ?? 1) + 1)) + (p.waitMin ?? 1),
+      currentLine:   rand(p.lineMin  ?? p.waitMin ?? 1,  p.lineMax  ?? p.waitMax ?? 20),
+      estimatedWait: rand(p.waitMin  ?? 1,               p.waitMax  ?? 20),
     }])
   );
   const [times, setTimes] = useState(gen);
@@ -1158,11 +1159,11 @@ function MapWaitModal({ pin, waitData, onClose }) {
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 text-center">
               <p className="text-[9px] font-black text-amber-600 tracking-widest uppercase mb-1">Personas en fila</p>
-              <p className="text-3xl font-black text-amber-700 tabular-nums">{waitData?.queue ?? "—"}</p>
+              <p className="text-3xl font-black text-amber-700 tabular-nums">{waitData?.currentLine ?? pin.currentLine ?? "—"}</p>
             </div>
             <div className="bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 text-center">
               <p className="text-[9px] font-black text-blue-600 tracking-widest uppercase mb-1">Espera estimada</p>
-              <p className="text-3xl font-black text-blue-700 tabular-nums">{waitData?.wait ?? "—"}<span className="text-sm font-semibold"> min</span></p>
+              <p className="text-3xl font-black text-blue-700 tabular-nums">{waitData?.estimatedWait ?? pin.estimatedWait ?? "—"}<span className="text-sm font-semibold"> min</span></p>
             </div>
           </div>
 
@@ -1214,6 +1215,19 @@ function MapInfoModal({ pin, onClose }) {
               <X size={15} strokeWidth={2.5} />
             </button>
           </div>
+          {/* Static queue data for non-live pins */}
+          {(pin.currentLine > 0 || pin.estimatedWait > 0) && (
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 text-center">
+                <p className="text-[9px] font-black text-amber-600 tracking-widest uppercase mb-1">Personas aprox.</p>
+                <p className="text-2xl font-black text-amber-700 tabular-nums">~{pin.currentLine}</p>
+              </div>
+              <div className="bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 text-center">
+                <p className="text-[9px] font-black text-blue-600 tracking-widest uppercase mb-1">Espera típica</p>
+                <p className="text-2xl font-black text-blue-700 tabular-nums">~{pin.estimatedWait}<span className="text-xs font-semibold"> min</span></p>
+              </div>
+            </div>
+          )}
           <div className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-4 mb-5">
             <p className="text-sm text-gray-700 font-medium leading-relaxed">{pin.desc}</p>
           </div>
@@ -2254,16 +2268,28 @@ function MapTab({ user, companions, userCooldown, onGroupReserve }) {
                     display: "flex", flexDirection: "column", alignItems: "center",
                   }}>
                     {/* Circle — shadcn style: white bg + colored border + colored icon */}
-                    <div
-                      className="w-9 h-9 rounded-full flex items-center justify-center bg-white border-2 group-active:scale-90 transition-transform"
-                      style={{
-                        borderColor: pin.color,
-                        boxShadow: isSelected
-                          ? `0 0 0 3px ${pin.color}55, 0 4px 12px ${pin.color}44`
-                          : "0 2px 8px rgba(0,0,0,0.18)",
-                      }}
-                    >
-                      <Icon size={16} strokeWidth={2.5} style={{ color: pin.color }} />
+                    <div className="relative">
+                      <div
+                        className="w-9 h-9 rounded-full flex items-center justify-center bg-white border-2 group-active:scale-90 transition-transform"
+                        style={{
+                          borderColor: pin.reservable ? "#f59e0b" : pin.color,
+                          boxShadow: pin.reservable
+                            ? isSelected
+                              ? `0 0 0 3px #f59e0b88, 0 0 0 5px #f59e0b33, 0 4px 14px ${pin.color}55`
+                              : `0 0 0 2.5px #f59e0b66, 0 0 0 4.5px #f59e0b22, 0 2px 8px rgba(0,0,0,0.2)`
+                            : isSelected
+                              ? `0 0 0 3px ${pin.color}55, 0 4px 12px ${pin.color}44`
+                              : "0 2px 8px rgba(0,0,0,0.18)",
+                        }}
+                      >
+                        <Icon size={16} strokeWidth={2.5} style={{ color: pin.reservable ? "#f59e0b" : pin.color }} />
+                      </div>
+                      {/* Gold star badge — reservable only */}
+                      {pin.reservable && (
+                        <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-400 border border-white flex items-center justify-center shadow-sm">
+                          <Star size={8} fill="#fff" color="#fff" strokeWidth={0} />
+                        </div>
+                      )}
                     </div>
 
                     {/* Label pill — fades in when scale ≥ 2 */}
@@ -2327,7 +2353,12 @@ function MapTab({ user, companions, userCooldown, onGroupReserve }) {
                 )}
                 {selected.hasQueue && waitTimes[selected.id] && (
                   <span className="text-[9px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
-                    {waitTimes[selected.id].wait} min
+                    {waitTimes[selected.id].estimatedWait} min · {waitTimes[selected.id].currentLine} pers.
+                  </span>
+                )}
+                {!selected.reservable && !selected.hasQueue && (selected.currentLine > 0 || selected.estimatedWait > 0) && (
+                  <span className="text-[9px] font-semibold text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded-full">
+                    ~{selected.estimatedWait} min
                   </span>
                 )}
               </div>
