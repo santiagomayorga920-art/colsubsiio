@@ -2617,8 +2617,11 @@ function FoodTab({ onToast }) {
               {/* Left accent + header row */}
               <button
                 onClick={() => setOpen(isOpen ? null : rest.id)}
-                className="w-full flex items-center gap-3 px-4 py-4 text-left transition-colors"
-                style={{ background: isOpen ? color + "08" : "transparent" }}
+                className="w-full flex items-center gap-3 px-4 py-4 text-left"
+                style={{
+                  background: isOpen ? color + "08" : "transparent",
+                  transition: "background 0.25s ease",
+                }}
               >
                 {/* Left color strip */}
                 <div
@@ -2640,12 +2643,13 @@ function FoodTab({ onToast }) {
                   <p className="text-[11px] text-gray-400 font-medium mt-0.5 truncate">{rest.desc}</p>
                 </div>
 
-                {/* Chevron */}
+                {/* Chevron — rotates 180° on open */}
                 <div
-                  className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
                   style={{
                     background: isOpen ? color + "18" : "#f3f4f6",
                     transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                    transition: "transform 0.32s cubic-bezier(0.4,0,0.2,1), background 0.25s ease",
                   }}
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
@@ -2655,48 +2659,53 @@ function FoodTab({ onToast }) {
                 </div>
               </button>
 
-              {/* Menu items */}
-              {isOpen && (
-                <div style={{ borderTop: `1px solid ${color}22` }}>
-                  {rest.items.map((item, iidx) => {
-                    const qty = cart[item.id]?.qty || 0;
-                    return (
-                      <div
-                        key={item.id}
-                        className="flex items-center gap-3 px-4 py-3"
-                        style={{ borderBottom: iidx < rest.items.length - 1 ? "1px solid #f3f4f6" : "none" }}
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-gray-800 leading-tight">{item.name}</p>
-                          <p
-                            className="text-[11px] font-black mt-0.5"
-                            style={{ color }}
-                          >
-                            {fmtCOP(item.price)}
-                          </p>
+              {/* Accordion panel — CSS grid 0fr→1fr for smooth height animation */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateRows: isOpen ? "1fr" : "0fr",
+                  transition: "grid-template-rows 0.32s cubic-bezier(0.4,0,0.2,1)",
+                }}
+              >
+                <div style={{ overflow: "hidden" }}>
+                  <div style={{ borderTop: `1px solid ${color}22` }}>
+                    {rest.items.map((item, iidx) => {
+                      const qty = cart[item.id]?.qty || 0;
+                      return (
+                        <div
+                          key={item.id}
+                          className="flex items-center gap-3 px-4 py-3"
+                          style={{ borderBottom: iidx < rest.items.length - 1 ? "1px solid #f3f4f6" : "none" }}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-800 leading-tight">{item.name}</p>
+                            <p className="text-[11px] font-black mt-0.5" style={{ color }}>
+                              {fmtCOP(item.price)}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            {qty > 0 && (
+                              <>
+                                <button onClick={() => sub(item)}
+                                  className="w-7 h-7 rounded-lg flex items-center justify-center font-black text-base active:scale-90 transition-transform"
+                                  style={{ background: color + "15", color }}>
+                                  −
+                                </button>
+                                <span className="text-sm font-black text-gray-900 w-5 text-center tabular-nums">{qty}</span>
+                              </>
+                            )}
+                            <button onClick={() => add(item)}
+                              className="w-7 h-7 rounded-lg text-white font-black text-base flex items-center justify-center active:scale-90 transition-transform"
+                              style={{ background: color, boxShadow: `0 2px 8px ${color}44` }}>
+                              +
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                          {qty > 0 && (
-                            <>
-                              <button onClick={() => sub(item)}
-                                className="w-7 h-7 rounded-lg flex items-center justify-center font-black text-base active:scale-90 transition-transform"
-                                style={{ background: color + "15", color }}>
-                                −
-                              </button>
-                              <span className="text-sm font-black text-gray-900 w-5 text-center tabular-nums">{qty}</span>
-                            </>
-                          )}
-                          <button onClick={() => add(item)}
-                            className="w-7 h-7 rounded-lg text-white font-black text-base flex items-center justify-center active:scale-90 transition-transform"
-                            style={{ background: color, boxShadow: `0 2px 8px ${color}44` }}>
-                            +
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
           );
         })}
