@@ -2597,7 +2597,8 @@ function FoodTab({ onToast }) {
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto px-4 pt-4 pb-32 space-y-3">
-        <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase px-0.5">
+        <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase px-0.5 animate-card-enter"
+           style={{ animationDelay: "0ms" }}>
           Restaurantes
         </p>
 
@@ -2608,9 +2609,9 @@ function FoodTab({ onToast }) {
           return (
             <div
               key={rest.id}
-              className="bg-white rounded-2xl overflow-hidden animate-slide-up relative"
+              className="bg-white rounded-2xl overflow-hidden animate-card-enter relative"
               style={{
-                animationDelay: `${ridx * 55}ms`,
+                animationDelay: `${60 + ridx * 75}ms`,
                 boxShadow: "0 2px 14px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)",
               }}
             >
