@@ -1418,9 +1418,10 @@ function CapacityBar({ capacity, selected, color }) {
 
 // ─── MAP BOOKING MODAL ────────────────────────────────────────────────────────
 function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldown, onGroupReserve }) {
+  const [step,       setStep]      = useState("decision"); // 'decision' | 'selection' | 'qr'
   const [slot,       setSlot]      = useState(null);
   const [btnState,   setBtnState]  = useState("idle"); // idle | loading | done
-  const [assignedTurns, setAssignedTurns] = useState([]); // populated on confirm
+  const [assignedTurns, setAssignedTurns] = useState([]);
   const attr = ATTRACTIONS.find(a => a.id === pin.attrId);
   const { Icon } = pin;
 
@@ -1444,8 +1445,6 @@ function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldo
     return { eligible: true, kind: null, reason: null };
   };
 
-  // selectedCompanions: array of selected person IDs (string[])
-  // Initialised with all eligible people pre-selected
   const [selectedCompanions, setSelectedCompanions] = useState(
     () => allPeople.filter(p => getStatus(p).eligible).map(p => p.id)
   );
@@ -1467,7 +1466,6 @@ function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldo
       if (onGroupReserve) {
         result = onGroupReserve({ attr, people });
       } else {
-        // Fallback when no onGroupReserve provided (e.g. non-attraction pins)
         result = { ok: true, turns: [{ turnNumber: 101, people }], eligible: people, blocked: [] };
       }
       if (result.ok) {
@@ -1482,6 +1480,82 @@ function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldo
     }, 900);
   };
 
+  const goSolo = () => {
+    setSelectedCompanions(["user"]);
+    setStep("qr");
+  };
+
+  // Reusable slot picker rows
+  const SlotPicker = () => (
+    <div className="space-y-2">
+      {MAP_TIME_SLOTS.map(s => (
+        <button key={s.id} onClick={() => btnState === "idle" && setSlot(s.id)}
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all active:scale-[0.985]
+            ${slot === s.id ? "border-brand-500 bg-brand-50" : "border-gray-200 bg-white hover:border-gray-300"}`}>
+          <Timer size={15} strokeWidth={2} className={slot === s.id ? "text-brand-500" : "text-gray-400"} />
+          <span className={`font-semibold text-sm flex-1 text-left ${slot === s.id ? "text-brand-700" : "text-gray-700"}`}>
+            {s.label}
+          </span>
+          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all
+            ${slot === s.id ? "bg-brand-600 border-brand-600" : "border-gray-300"}`}>
+            {slot === s.id && (
+              <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+
+  // Reusable confirm CTA
+  const ConfirmCTA = ({ soloMode }) => (
+    <button
+      onClick={handleConfirm}
+      disabled={!canConfirm}
+      className={`w-full flex items-center justify-center gap-2 font-black py-4 rounded-2xl text-sm transition-all duration-300
+        ${btnState === "done"
+          ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200 scale-[1.01]"
+          : btnState === "loading"
+            ? "bg-brand-500 text-white shadow-lg shadow-brand-200 cursor-wait"
+            : canConfirm
+              ? "bg-brand-600 hover:bg-brand-700 active:scale-[0.97] active:bg-brand-800 text-white shadow-lg shadow-brand-300/50"
+              : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
+    >
+      {btnState === "loading" && (
+        <svg className="animate-spin" width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="6" stroke="rgba(255,255,255,0.3)" strokeWidth="2.5" />
+          <path d="M8 2a6 6 0 0 1 6 6" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+      )}
+      {btnState === "done" && (
+        <svg width="18" height="14" viewBox="0 0 18 14" fill="none">
+          <path d="M1 7L6 12L17 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )}
+      {btnState === "idle" && <QrCode size={16} strokeWidth={2.5} />}
+      <span>
+        {btnState === "loading" && (soloMode ? "Generando Fast Pass…" : "Asignando turnos…")}
+        {btnState === "done" && assignedTurns.length > 0 && (
+          soloMode
+            ? `¡Turno #${assignedTurns[0].turnNumber} asignado!`
+            : assignedTurns.length === 1
+              ? `¡Turno #${assignedTurns[0].turnNumber} asignado!`
+              : `Tus turnos: ${assignedTurns.map(t => `#${t.turnNumber}`).join(", ")}`
+        )}
+        {btnState === "done" && assignedTurns.length === 0 && (soloMode ? "¡Fast Pass listo!" : "¡Reserva confirmada!")}
+        {btnState === "idle" && (
+          soloMode
+            ? (slot ? "Obtener Fast Pass" : "Selecciona un horario")
+            : (selectedCount > 0
+                ? `Reservar para ${selectedCount} persona${selectedCount > 1 ? "s" : ""}`
+                : "Selecciona al menos 1 persona")
+        )}
+      </span>
+    </button>
+  );
+
   return (
     <div className="fixed inset-0 bg-black/60 z-40 flex items-end animate-fade-in" onClick={onClose}>
       <div
@@ -1494,9 +1568,9 @@ function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldo
           <div className="w-10 h-1 bg-gray-200 rounded-full" />
         </div>
 
-        {/* Header */}
+        {/* Header — always visible */}
         <div className="px-5 pt-2 pb-4 border-b border-gray-100 flex-shrink-0">
-          <div className="flex items-center gap-3 mb-3">
+          <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
                  style={{ background: pin.color + "22" }}>
               <Icon size={22} style={{ color: pin.color }} strokeWidth={1.8} />
@@ -1520,225 +1594,242 @@ function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldo
               <X size={15} strokeWidth={2.5} />
             </button>
           </div>
-
-          {/* Capacity visualizer */}
-          {attr && (
-            <div className="bg-gray-50 rounded-2xl px-4 py-3">
-              <p className="text-[10px] font-black text-gray-400 tracking-widest uppercase mb-2">
-                Capacidad · {selectedCount}/{attr.capacity} seleccionados
-              </p>
-              <CapacityBar capacity={attr.capacity} selected={selectedCount} color={pin.color} />
-            </div>
-          )}
         </div>
 
-        {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto">
+        {/* ── Step content with fade transition ── */}
+        <div key={step} className="flex-1 flex flex-col overflow-hidden animate-fade-in">
 
-          {/* ¿Quién va? */}
-          <div className="px-5 pt-4 pb-3">
-            <p className="text-[10px] font-black text-gray-400 tracking-widest uppercase mb-3">
-              ¿Quién va?
-            </p>
-            <div className="space-y-2">
-              {allPeople.map(person => {
-                const { eligible, kind, reason } = getStatus(person);
-                const checked = selectedCompanions.includes(person.id) && eligible;
-                const bg = person.isUser ? "#1d4ed8" : avatarColor(person.id);
-                return (
-                  <button
-                    key={person.id}
-                    disabled={!eligible || btnState !== "idle"}
-                    onClick={() => eligible && btnState === "idle" && toggle(person.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border-2 text-left transition-all duration-200
-                      ${!eligible
-                        ? "border-gray-100 bg-gray-50 cursor-not-allowed"
-                        : checked
-                          ? "border-brand-400 bg-brand-50 shadow-sm shadow-brand-100 active:scale-[0.985]"
-                          : "border-gray-200 bg-white hover:border-gray-300 active:scale-[0.985]"}`}
-                  >
-                    {/* Avatar with status overlay */}
-                    <div className="relative flex-shrink-0">
-                      <div
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-white text-sm shadow-sm transition-all
-                          ${!eligible ? "opacity-40" : ""}`}
-                        style={{ background: bg }}
-                      >
-                        {person.avatarInitial}
-                      </div>
-                      {/* Status badge overlay */}
-                      {!eligible && (
-                        <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center
-                          ${kind === "age" ? "bg-red-400" : "bg-amber-400"}`}>
-                          {kind === "age"
-                            ? <LockIcon size={9} className="text-white" strokeWidth={2.5} />
-                            : <Timer size={9} className="text-white" strokeWidth={2.5} />
-                          }
-                        </div>
-                      )}
-                      {/* Selected ring */}
-                      {checked && (
-                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-brand-600 border-2 border-white flex items-center justify-center">
-                          <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
-                            <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </div>
-                      )}
+          {/* ── DECISION STEP ── */}
+          {step === "decision" && (
+            <div className="flex-1 overflow-y-auto px-5 py-6">
+              <p className="text-center text-xs font-semibold text-gray-400 tracking-widest uppercase mb-5">
+                ¿Cómo quieres acceder?
+              </p>
+              <div className="space-y-3">
+
+                {/* Solo card */}
+                <button
+                  onClick={goSolo}
+                  className="w-full text-left p-5 rounded-3xl border-2 border-gray-200 bg-white hover:border-brand-300 hover:bg-brand-50 active:scale-[0.97] transition-all duration-200 group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 text-3xl
+                                    bg-blue-50 group-hover:bg-brand-100 transition-colors">
+                      🎢
                     </div>
-
-                    {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-bold leading-tight ${!eligible ? "text-gray-400" : "text-gray-900"}`}>
-                        {person.isUser ? "Tú" : person.name}
-                      </p>
-                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        <span className="text-[10px] text-gray-400 font-medium">{person.age} años</span>
-                        {!eligible && kind === "age" && (
-                          <span className="text-[10px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded-full">
-                            {reason}
-                          </span>
-                        )}
-                        {!eligible && kind === "cooldown" && (
-                          <span className="flex items-center gap-1 bg-amber-50 px-1.5 py-0.5 rounded-full">
-                            <Timer size={8} className="text-amber-500" strokeWidth={2.5} />
-                            <CooldownMini cooldownUntil={person.cooldownUntil} />
-                          </span>
-                        )}
-                      </div>
+                      <p className="font-black text-gray-900 text-base">Subir Solo</p>
+                      <p className="text-xs text-gray-500 mt-0.5 leading-snug">Acceso individual · Fast Pass inmediato</p>
                     </div>
-
-                    {/* Circular selector */}
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200
-                      ${!eligible
-                        ? "border-gray-200 bg-gray-100"
-                        : checked
-                          ? "bg-brand-600 border-brand-600 shadow-sm"
-                          : "border-gray-300 bg-white"}`}>
-                      {checked && (
-                        <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                          <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8"
-                                strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Horario */}
-          <div className="px-5 pt-1 pb-5">
-            <p className="text-[10px] font-black text-gray-400 tracking-widest uppercase mb-3">
-              Selecciona un horario
-            </p>
-            <div className="space-y-2">
-              {MAP_TIME_SLOTS.map(s => (
-                <button key={s.id} onClick={() => btnState === "idle" && setSlot(s.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all active:scale-[0.985]
-                    ${slot === s.id
-                      ? "border-brand-500 bg-brand-50"
-                      : "border-gray-200 bg-white hover:border-gray-300"}`}>
-                  <Timer size={15} strokeWidth={2}
-                         className={slot === s.id ? "text-brand-500" : "text-gray-400"} />
-                  <span className={`font-semibold text-sm flex-1 text-left ${slot === s.id ? "text-brand-700" : "text-gray-700"}`}>
-                    {s.label}
-                  </span>
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all
-                    ${slot === s.id ? "bg-brand-600 border-brand-600" : "border-gray-300"}`}>
-                    {slot === s.id && (
-                      <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
-                        <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    )}
+                    <ChevronRight size={18} strokeWidth={2.5}
+                      className="text-gray-300 group-hover:text-brand-400 transition-colors flex-shrink-0" />
                   </div>
                 </button>
-              ))}
-            </div>
-          </div>
 
-        </div>
+                {/* Group card */}
+                <button
+                  onClick={() => setStep("selection")}
+                  className="w-full text-left p-5 rounded-3xl border-2 border-gray-200 bg-white hover:border-amber-300 hover:bg-amber-50 active:scale-[0.97] transition-all duration-200 group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 text-3xl
+                                    bg-amber-50 group-hover:bg-amber-100 transition-colors">
+                      👨‍👩‍👧‍👦
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-black text-gray-900 text-base">Ir Acompañado</p>
+                      <p className="text-xs text-gray-500 mt-0.5 leading-snug">Incluye a tu grupo · Turno familiar</p>
+                    </div>
+                    <ChevronRight size={18} strokeWidth={2.5}
+                      className="text-gray-300 group-hover:text-amber-400 transition-colors flex-shrink-0" />
+                  </div>
+                </button>
 
-        {/* ── Sticky footer: counter + CTA ── */}
-        <div className="flex-shrink-0 border-t border-gray-100 bg-white px-5 pt-3 pb-7 space-y-3">
-
-          {/* Counter bar */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${selectedCount > 0 ? "bg-brand-500" : "bg-gray-300"}`} />
-              <span className="text-xs font-bold text-gray-700">
-                Seleccionados:
-                <span className={`ml-1 tabular-nums ${selectedCount > 0 ? "text-brand-700" : "text-gray-400"}`}>
-                  {selectedCount}
-                </span>
-              </span>
-            </div>
-            {attr && (
-              <span className="text-xs font-semibold text-gray-400">
-                Capacidad máx:
-                <span className="ml-1 font-black text-gray-700">{attr.capacity}</span>
-              </span>
-            )}
-          </div>
-
-          {/* Turns preview chip — appears when group exceeds capacity */}
-          {attr && selectedCount > attr.capacity && (
-            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 animate-fade-in">
-              <ZapIcon size={11} className="text-amber-500 flex-shrink-0" strokeWidth={2.5} />
-              <p className="text-xs text-amber-700 font-semibold">
-                {Math.ceil(selectedCount / attr.capacity)} turnos consecutivos · tu familia irá junta en el flujo
-              </p>
+              </div>
             </div>
           )}
 
-          {/* Slot missing reminder */}
-          {selectedCount > 0 && !slot && btnState === "idle" && (
-            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 animate-fade-in">
-              <Timer size={11} className="text-gray-400 flex-shrink-0" strokeWidth={2} />
-              <p className="text-xs text-gray-500 font-medium">Elige un horario para continuar</p>
-            </div>
+          {/* ── SELECTION STEP ── */}
+          {step === "selection" && (
+            <>
+              {attr && (
+                <div className="px-5 pt-3 pb-3 border-b border-gray-100 flex-shrink-0">
+                  <div className="bg-gray-50 rounded-2xl px-4 py-3">
+                    <p className="text-[10px] font-black text-gray-400 tracking-widest uppercase mb-2">
+                      Capacidad · {selectedCount}/{attr.capacity} seleccionados
+                    </p>
+                    <CapacityBar capacity={attr.capacity} selected={selectedCount} color={pin.color} />
+                  </div>
+                </div>
+              )}
+              <div className="flex-1 overflow-y-auto">
+                <div className="px-5 pt-3 pb-1">
+                  <button
+                    onClick={() => setStep("decision")}
+                    className="flex items-center gap-1 text-xs font-bold text-brand-500 active:opacity-70"
+                  >
+                    <ArrowLeft size={13} strokeWidth={2.5} />
+                    Volver
+                  </button>
+                </div>
+
+                {/* Who goes checklist */}
+                <div className="px-5 pt-3 pb-3">
+                  <p className="text-[10px] font-black text-gray-400 tracking-widest uppercase mb-3">¿Quién va?</p>
+                  <div className="space-y-2">
+                    {allPeople.map(person => {
+                      const { eligible, kind, reason } = getStatus(person);
+                      const checked = selectedCompanions.includes(person.id) && eligible;
+                      const bg = person.isUser ? "#1d4ed8" : avatarColor(person.id);
+                      return (
+                        <button
+                          key={person.id}
+                          disabled={!eligible || btnState !== "idle"}
+                          onClick={() => eligible && btnState === "idle" && toggle(person.id)}
+                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border-2 text-left transition-all duration-200
+                            ${!eligible
+                              ? "border-gray-100 bg-gray-50 cursor-not-allowed"
+                              : checked
+                                ? "border-brand-400 bg-brand-50 shadow-sm shadow-brand-100 active:scale-[0.985]"
+                                : "border-gray-200 bg-white hover:border-gray-300 active:scale-[0.985]"}`}
+                        >
+                          <div className="relative flex-shrink-0">
+                            <div
+                              className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-white text-sm shadow-sm transition-all
+                                ${!eligible ? "opacity-40" : ""}`}
+                              style={{ background: bg }}
+                            >
+                              {person.avatarInitial}
+                            </div>
+                            {!eligible && (
+                              <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center
+                                ${kind === "age" ? "bg-red-400" : "bg-amber-400"}`}>
+                                {kind === "age"
+                                  ? <LockIcon size={9} className="text-white" strokeWidth={2.5} />
+                                  : <Timer size={9} className="text-white" strokeWidth={2.5} />
+                                }
+                              </div>
+                            )}
+                            {checked && (
+                              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-brand-600 border-2 border-white flex items-center justify-center">
+                                <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                                  <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm font-bold leading-tight ${!eligible ? "text-gray-400" : "text-gray-900"}`}>
+                              {person.isUser ? "Tú" : person.name}
+                            </p>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              <span className="text-[10px] text-gray-400 font-medium">{person.age} años</span>
+                              {!eligible && kind === "age" && (
+                                <span className="text-[10px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded-full">
+                                  {reason}
+                                </span>
+                              )}
+                              {!eligible && kind === "cooldown" && (
+                                <span className="flex items-center gap-1 bg-amber-50 px-1.5 py-0.5 rounded-full">
+                                  <Timer size={8} className="text-amber-500" strokeWidth={2.5} />
+                                  <CooldownMini cooldownUntil={person.cooldownUntil} />
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200
+                            ${!eligible
+                              ? "border-gray-200 bg-gray-100"
+                              : checked
+                                ? "bg-brand-600 border-brand-600 shadow-sm"
+                                : "border-gray-300 bg-white"}`}>
+                            {checked && (
+                              <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                                <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8"
+                                      strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Slot picker */}
+                <div className="px-5 pt-1 pb-5">
+                  <p className="text-[10px] font-black text-gray-400 tracking-widest uppercase mb-3">
+                    Selecciona un horario
+                  </p>
+                  <SlotPicker />
+                </div>
+              </div>
+
+              {/* Sticky footer */}
+              <div className="flex-shrink-0 border-t border-gray-100 bg-white px-5 pt-3 pb-7 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${selectedCount > 0 ? "bg-brand-500" : "bg-gray-300"}`} />
+                    <span className="text-xs font-bold text-gray-700">
+                      Seleccionados:
+                      <span className={`ml-1 tabular-nums ${selectedCount > 0 ? "text-brand-700" : "text-gray-400"}`}>
+                        {selectedCount}
+                      </span>
+                    </span>
+                  </div>
+                  {attr && (
+                    <span className="text-xs font-semibold text-gray-400">
+                      Capacidad máx: <span className="ml-1 font-black text-gray-700">{attr.capacity}</span>
+                    </span>
+                  )}
+                </div>
+                {attr && selectedCount > attr.capacity && (
+                  <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 animate-fade-in">
+                    <ZapIcon size={11} className="text-amber-500 flex-shrink-0" strokeWidth={2.5} />
+                    <p className="text-xs text-amber-700 font-semibold">
+                      {Math.ceil(selectedCount / attr.capacity)} turnos consecutivos · tu familia irá junta en el flujo
+                    </p>
+                  </div>
+                )}
+                {selectedCount > 0 && !slot && btnState === "idle" && (
+                  <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 animate-fade-in">
+                    <Timer size={11} className="text-gray-400 flex-shrink-0" strokeWidth={2} />
+                    <p className="text-xs text-gray-500 font-medium">Elige un horario para continuar</p>
+                  </div>
+                )}
+                <ConfirmCTA soloMode={false} />
+              </div>
+            </>
           )}
 
-          {/* CTA button */}
-          <button
-            onClick={handleConfirm}
-            disabled={!canConfirm}
-            className={`w-full flex items-center justify-center gap-2 font-black py-4 rounded-2xl text-sm transition-all duration-300
-              ${btnState === "done"
-                ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200 scale-[1.01]"
-                : btnState === "loading"
-                  ? "bg-brand-500 text-white shadow-lg shadow-brand-200 cursor-wait"
-                  : canConfirm
-                    ? "bg-brand-600 hover:bg-brand-700 active:scale-[0.97] active:bg-brand-800 text-white shadow-lg shadow-brand-300/50"
-                    : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
-          >
-            {btnState === "loading" && (
-              <svg className="animate-spin" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <circle cx="8" cy="8" r="6" stroke="rgba(255,255,255,0.3)" strokeWidth="2.5" />
-                <path d="M8 2a6 6 0 0 1 6 6" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-              </svg>
-            )}
-            {btnState === "done" && (
-              <svg width="18" height="14" viewBox="0 0 18 14" fill="none">
-                <path d="M1 7L6 12L17 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            )}
-            {btnState === "idle" && <QrCode size={16} strokeWidth={2.5} />}
-            <span>
-              {btnState === "loading" && "Asignando turnos…"}
-              {btnState === "done" && assignedTurns.length > 0 && (
-                assignedTurns.length === 1
-                  ? `¡Turno #${assignedTurns[0].turnNumber} asignado!`
-                  : `Tus turnos: ${assignedTurns.map(t => `#${t.turnNumber}`).join(", ")}`
-              )}
-              {btnState === "done" && assignedTurns.length === 0 && "¡Reserva confirmada!"}
-              {btnState === "idle" && (
-                selectedCount > 0
-                  ? `Reservar para ${selectedCount} persona${selectedCount > 1 ? "s" : ""}`
-                  : "Selecciona al menos 1 persona"
-              )}
-            </span>
-          </button>
+          {/* ── QR STEP (Solo) ── */}
+          {step === "qr" && (
+            <>
+              <div className="flex-1 overflow-y-auto px-5 py-6">
+                <button
+                  onClick={() => setStep("decision")}
+                  className="flex items-center gap-1 text-xs font-bold text-brand-500 mb-5 active:opacity-70"
+                >
+                  <ArrowLeft size={13} strokeWidth={2.5} />
+                  Volver
+                </button>
+                <p className="text-[10px] font-black text-gray-400 tracking-widest uppercase mb-3">
+                  Selecciona un horario
+                </p>
+                <SlotPicker />
+              </div>
+              <div className="flex-shrink-0 border-t border-gray-100 bg-white px-5 pt-3 pb-7 space-y-3">
+                {!slot && btnState === "idle" && (
+                  <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+                    <Timer size={11} className="text-gray-400 flex-shrink-0" strokeWidth={2} />
+                    <p className="text-xs text-gray-500 font-medium">Elige un horario para continuar</p>
+                  </div>
+                )}
+                <ConfirmCTA soloMode={true} />
+              </div>
+            </>
+          )}
+
         </div>
       </div>
     </div>
