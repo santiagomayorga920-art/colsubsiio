@@ -1417,7 +1417,7 @@ function CapacityBar({ capacity, selected, color }) {
 }
 
 // ─── MAP BOOKING MODAL ────────────────────────────────────────────────────────
-function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldown, onGroupReserve }) {
+function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldown, onGroupReserve, onNavigateToProfile }) {
   const [step,       setStep]      = useState("decision"); // 'decision' | 'selection' | 'qr'
   const [slot,       setSlot]      = useState(null);
   const [btnState,   setBtnState]  = useState("idle"); // idle | loading | done
@@ -1652,153 +1652,183 @@ function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldo
           {/* ── SELECTION STEP ── */}
           {step === "selection" && (
             <>
-              {attr && (
-                <div className="px-5 pt-3 pb-3 border-b border-gray-100 flex-shrink-0">
-                  <div className="bg-gray-50 rounded-2xl px-4 py-3">
-                    <p className="text-[10px] font-black text-gray-400 tracking-widest uppercase mb-2">
-                      Capacidad · {selectedCount}/{attr.capacity} seleccionados
-                    </p>
-                    <CapacityBar capacity={attr.capacity} selected={selectedCount} color={pin.color} />
+              {/* Back nav */}
+              <div className="px-5 pt-3 pb-2 flex-shrink-0">
+                <button
+                  onClick={() => setStep("decision")}
+                  className="flex items-center gap-1 text-xs font-bold text-brand-500 active:opacity-70"
+                >
+                  <ArrowLeft size={13} strokeWidth={2.5} />
+                  Volver
+                </button>
+              </div>
+
+              {/* ── Empty state: no companions registered ── */}
+              {(companions ?? []).length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center px-8 pb-8 animate-fade-in">
+                  <div className="w-20 h-20 rounded-3xl bg-brand-50 flex items-center justify-center mb-5 shadow-sm">
+                    <Users size={36} strokeWidth={1.5} style={{ color: "#1a56db" }} />
                   </div>
-                </div>
-              )}
-              <div className="flex-1 overflow-y-auto">
-                <div className="px-5 pt-3 pb-1">
+                  <p className="font-black text-gray-900 text-lg text-center leading-tight mb-2">
+                    Aún no tienes a nadie en tu parche
+                  </p>
+                  <p className="text-sm text-gray-500 text-center leading-relaxed mb-7">
+                    Agrega acompañantes desde tu perfil para reservar juntos y disfrutar en grupo.
+                  </p>
                   <button
-                    onClick={() => setStep("decision")}
-                    className="flex items-center gap-1 text-xs font-bold text-brand-500 active:opacity-70"
+                    onClick={() => { onClose(); onNavigateToProfile?.(); }}
+                    className="flex items-center gap-2 px-6 py-3.5 rounded-2xl font-black text-sm text-white shadow-lg shadow-brand-300/50 active:scale-95 transition-all"
+                    style={{ background: "linear-gradient(135deg, #1a56db, #1648b8)" }}
                   >
-                    <ArrowLeft size={13} strokeWidth={2.5} />
-                    Volver
+                    <Users size={15} strokeWidth={2.5} />
+                    Registrar acompañantes
                   </button>
                 </div>
-
-                {/* Who goes checklist */}
-                <div className="px-5 pt-3 pb-3">
-                  <p className="text-[10px] font-black text-gray-400 tracking-widest uppercase mb-3">¿Quién va?</p>
-                  <div className="space-y-2">
-                    {allPeople.map(person => {
-                      const { eligible, kind, reason } = getStatus(person);
-                      const checked = selectedCompanions.includes(person.id) && eligible;
-                      const bg = person.isUser ? "#1d4ed8" : avatarColor(person.id);
-                      return (
-                        <button
-                          key={person.id}
-                          disabled={!eligible || btnState !== "idle"}
-                          onClick={() => eligible && btnState === "idle" && toggle(person.id)}
-                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border-2 text-left transition-all duration-200
-                            ${!eligible
-                              ? "border-gray-100 bg-gray-50 cursor-not-allowed"
-                              : checked
-                                ? "border-brand-400 bg-brand-50 shadow-sm shadow-brand-100 active:scale-[0.985]"
-                                : "border-gray-200 bg-white hover:border-gray-300 active:scale-[0.985]"}`}
-                        >
-                          <div className="relative flex-shrink-0">
-                            <div
-                              className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-white text-sm shadow-sm transition-all
-                                ${!eligible ? "opacity-40" : ""}`}
-                              style={{ background: bg }}
-                            >
-                              {person.avatarInitial}
-                            </div>
-                            {!eligible && (
-                              <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center
-                                ${kind === "age" ? "bg-red-400" : "bg-amber-400"}`}>
-                                {kind === "age"
-                                  ? <LockIcon size={9} className="text-white" strokeWidth={2.5} />
-                                  : <Timer size={9} className="text-white" strokeWidth={2.5} />
-                                }
-                              </div>
-                            )}
-                            {checked && (
-                              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-brand-600 border-2 border-white flex items-center justify-center">
-                                <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
-                                  <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-bold leading-tight ${!eligible ? "text-gray-400" : "text-gray-900"}`}>
-                              {person.isUser ? "Tú" : person.name}
-                            </p>
-                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                              <span className="text-[10px] text-gray-400 font-medium">{person.age} años</span>
-                              {!eligible && kind === "age" && (
-                                <span className="text-[10px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded-full">
-                                  {reason}
-                                </span>
-                              )}
-                              {!eligible && kind === "cooldown" && (
-                                <span className="flex items-center gap-1 bg-amber-50 px-1.5 py-0.5 rounded-full">
-                                  <Timer size={8} className="text-amber-500" strokeWidth={2.5} />
-                                  <CooldownMini cooldownUntil={person.cooldownUntil} />
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200
-                            ${!eligible
-                              ? "border-gray-200 bg-gray-100"
-                              : checked
-                                ? "bg-brand-600 border-brand-600 shadow-sm"
-                                : "border-gray-300 bg-white"}`}>
-                            {checked && (
-                              <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                                <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8"
-                                      strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Slot picker */}
-                <div className="px-5 pt-1 pb-5">
-                  <p className="text-[10px] font-black text-gray-400 tracking-widest uppercase mb-3">
-                    Selecciona un horario
-                  </p>
-                  <SlotPicker />
-                </div>
-              </div>
-
-              {/* Sticky footer */}
-              <div className="flex-shrink-0 border-t border-gray-100 bg-white px-5 pt-3 pb-7 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${selectedCount > 0 ? "bg-brand-500" : "bg-gray-300"}`} />
-                    <span className="text-xs font-bold text-gray-700">
-                      Seleccionados:
-                      <span className={`ml-1 tabular-nums ${selectedCount > 0 ? "text-brand-700" : "text-gray-400"}`}>
-                        {selectedCount}
-                      </span>
-                    </span>
-                  </div>
+              ) : (
+                /* ── List view ── */
+                <>
                   {attr && (
-                    <span className="text-xs font-semibold text-gray-400">
-                      Capacidad máx: <span className="ml-1 font-black text-gray-700">{attr.capacity}</span>
-                    </span>
+                    <div className="px-5 pb-3 flex-shrink-0">
+                      <div className="bg-gray-50 rounded-2xl px-4 py-3">
+                        <p className="text-[10px] font-black text-gray-400 tracking-widest uppercase mb-2">
+                          Capacidad · {selectedCount}/{attr.capacity} seleccionados
+                        </p>
+                        <CapacityBar capacity={attr.capacity} selected={selectedCount} color={pin.color} />
+                      </div>
+                    </div>
                   )}
-                </div>
-                {attr && selectedCount > attr.capacity && (
-                  <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 animate-fade-in">
-                    <ZapIcon size={11} className="text-amber-500 flex-shrink-0" strokeWidth={2.5} />
-                    <p className="text-xs text-amber-700 font-semibold">
-                      {Math.ceil(selectedCount / attr.capacity)} turnos consecutivos · tu familia irá junta en el flujo
-                    </p>
+                  <div className="flex-1 overflow-y-auto">
+                    {/* Who goes checklist */}
+                    <div className="px-5 pt-1 pb-3">
+                      <p className="text-[10px] font-black text-gray-400 tracking-widest uppercase mb-3">¿Quién va?</p>
+                      <div className="space-y-2">
+                        {allPeople.map(person => {
+                          const { eligible, kind, reason } = getStatus(person);
+                          const checked = selectedCompanions.includes(person.id) && eligible;
+                          const bg = person.isUser ? "#1d4ed8" : avatarColor(person.id);
+                          const inCooldown = kind === "cooldown";
+                          return (
+                            <button
+                              key={person.id}
+                              disabled={!eligible || btnState !== "idle"}
+                              onClick={() => eligible && btnState === "idle" && toggle(person.id)}
+                              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border-2 text-left transition-all duration-200
+                                ${!eligible
+                                  ? "border-gray-100 bg-gray-50 cursor-not-allowed opacity-55"
+                                  : checked
+                                    ? "border-brand-400 bg-brand-50 shadow-sm shadow-brand-100 active:scale-[0.985]"
+                                    : "border-gray-200 bg-white hover:border-gray-300 active:scale-[0.985]"}`}
+                            >
+                              <div className="relative flex-shrink-0">
+                                <div
+                                  className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-white text-sm shadow-sm"
+                                  style={{ background: bg }}
+                                >
+                                  {person.avatarInitial}
+                                </div>
+                                {!eligible && (
+                                  <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center
+                                    ${kind === "age" ? "bg-red-400" : "bg-amber-400"}`}>
+                                    {kind === "age"
+                                      ? <LockIcon size={9} className="text-white" strokeWidth={2.5} />
+                                      : <Timer size={9} className="text-white" strokeWidth={2.5} />
+                                    }
+                                  </div>
+                                )}
+                                {checked && (
+                                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-brand-600 border-2 border-white flex items-center justify-center">
+                                    <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                                      <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm font-bold leading-tight ${!eligible ? "text-gray-400" : "text-gray-900"}`}>
+                                  {person.isUser ? "Tú" : person.name}
+                                </p>
+                                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                  <span className="text-[10px] text-gray-400 font-medium">{person.age} años</span>
+                                  {!eligible && kind === "age" && (
+                                    <span className="text-[10px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded-full">
+                                      {reason}
+                                    </span>
+                                  )}
+                                  {inCooldown && (
+                                    <span className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full">
+                                      <Timer size={8} className="text-amber-500" strokeWidth={2.5} />
+                                      <span className="text-[10px] font-bold text-amber-600">
+                                        <CooldownMini cooldownUntil={person.cooldownUntil} />
+                                      </span>
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              {/* Visual checkbox */}
+                              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200
+                                ${!eligible
+                                  ? "border-gray-200 bg-gray-100"
+                                  : checked
+                                    ? "bg-brand-600 border-brand-600 shadow-sm"
+                                    : "border-gray-300 bg-white"}`}>
+                                {checked && (
+                                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                                    <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8"
+                                          strokeLinecap="round" strokeLinejoin="round"/>
+                                  </svg>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Slot picker */}
+                    <div className="px-5 pt-1 pb-5">
+                      <p className="text-[10px] font-black text-gray-400 tracking-widest uppercase mb-3">
+                        Selecciona un horario
+                      </p>
+                      <SlotPicker />
+                    </div>
                   </div>
-                )}
-                {selectedCount > 0 && !slot && btnState === "idle" && (
-                  <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 animate-fade-in">
-                    <Timer size={11} className="text-gray-400 flex-shrink-0" strokeWidth={2} />
-                    <p className="text-xs text-gray-500 font-medium">Elige un horario para continuar</p>
+
+                  {/* Sticky footer */}
+                  <div className="flex-shrink-0 border-t border-gray-100 bg-white px-5 pt-3 pb-7 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${selectedCount > 0 ? "bg-brand-500" : "bg-gray-300"}`} />
+                        <span className="text-xs font-bold text-gray-700">
+                          Seleccionados:
+                          <span className={`ml-1 tabular-nums ${selectedCount > 0 ? "text-brand-700" : "text-gray-400"}`}>
+                            {selectedCount}
+                          </span>
+                        </span>
+                      </div>
+                      {attr && (
+                        <span className="text-xs font-semibold text-gray-400">
+                          Capacidad máx: <span className="ml-1 font-black text-gray-700">{attr.capacity}</span>
+                        </span>
+                      )}
+                    </div>
+                    {attr && selectedCount > attr.capacity && (
+                      <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 animate-fade-in">
+                        <ZapIcon size={11} className="text-amber-500 flex-shrink-0" strokeWidth={2.5} />
+                        <p className="text-xs text-amber-700 font-semibold">
+                          {Math.ceil(selectedCount / attr.capacity)} turnos consecutivos · tu familia irá junta en el flujo
+                        </p>
+                      </div>
+                    )}
+                    {selectedCount > 0 && !slot && btnState === "idle" && (
+                      <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 animate-fade-in">
+                        <Timer size={11} className="text-gray-400 flex-shrink-0" strokeWidth={2} />
+                        <p className="text-xs text-gray-500 font-medium">Elige un horario para continuar</p>
+                      </div>
+                    )}
+                    <ConfirmCTA soloMode={false} />
                   </div>
-                )}
-                <ConfirmCTA soloMode={false} />
-              </div>
+                </>
+              )}
             </>
           )}
 
@@ -2269,7 +2299,7 @@ const MAP_IMG_SRC = import.meta.env.BASE_URL + "assets/mapa_detallado.jpg";
 const SCALE_MIN = 1;
 const SCALE_MAX = 4;
 
-function MapTab({ user, companions, userCooldown, onGroupReserve }) {
+function MapTab({ user, companions, userCooldown, onGroupReserve, onNavigateToProfile }) {
   const [scale, setScale]         = useState(1);
   const [offset, setOffset]       = useState({ x: 0, y: 0 });
   const [imgOk, setImgOk]         = useState(true);
@@ -2612,6 +2642,7 @@ function MapTab({ user, companions, userCooldown, onGroupReserve }) {
           companions={companions}
           userCooldown={userCooldown}
           onGroupReserve={onGroupReserve}
+          onNavigateToProfile={onNavigateToProfile}
         />
       )}
       {modal === "menu" && selected && (
@@ -3308,7 +3339,7 @@ function Dashboard({ user, reservations, onReserve, onLogout, fastPass, setFastP
           {activeTab === "atracciones" && (
             <AttractionsTab reservations={reservations} onReserve={onReserve} onToast={onToast} />
           )}
-          {activeTab === "mapa"     && <MapTab user={user} companions={companions} userCooldown={userCooldown} onGroupReserve={onGroupReserve} />}
+          {activeTab === "mapa"     && <MapTab user={user} companions={companions} userCooldown={userCooldown} onGroupReserve={onGroupReserve} onNavigateToProfile={() => setActiveTab("perfil")} />}
           {activeTab === "comida"   && <FoodTab onToast={onToast} />}
           {activeTab === "fastpass" && (
             <FastPassTab user={user} fastPass={fastPass} setFastPass={setFastPass} onToast={onToast} />
