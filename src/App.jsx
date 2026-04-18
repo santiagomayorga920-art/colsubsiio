@@ -4376,6 +4376,9 @@ export default function App() {
   const [pendingUser, setPendingUser] = useState(null);
   const [user, setUser]               = useState(null);
   const [toast, setToast]             = useState(null);
+  const [hasSeenTutorial, setHasSeenTutorial] = useState(false);
+
+  const completeTutorial = useCallback(() => setHasSeenTutorial(true), []);
 
   const showToast = (msg, type = "success") => setToast({ msg, type });
 
@@ -4438,6 +4441,7 @@ export default function App() {
 
   const handleVerified = (userData) => {
     setUser(userData);
+    setHasSeenTutorial(false); // new registration always sees tutorial
     setScreen("dashboard");
     showToast(`¡Bienvenido, ${userData.name.split(" ")[0]}!`, "success");
     setTimeout(() => setShowFPPopup(true), 1000);
@@ -4448,6 +4452,7 @@ export default function App() {
     setReservations([]); setFastPass(null);
     setShowFPPopup(false);
     setCompanions([]); setUserCooldown(null);
+    setHasSeenTutorial(false);
     setScreen("login");
   };
 
