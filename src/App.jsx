@@ -4370,6 +4370,132 @@ function AttractionsTab({ reservations, onToast, user, companions, userCooldown,
   );
 }
 
+// ─── ONBOARDING TUTORIAL ─────────────────────────────────────────────────────
+const TUTORIAL_SLIDES = [
+  {
+    Icon: Ticket,
+    color: "#1a56db",
+    bg: "rgba(26,86,219,0.15)",
+    title: "¡Chao filas!",
+    text: "Reserva tu turno en las atracciones desde tu celular con FastPass.",
+  },
+  {
+    Icon: Users,
+    color: "#059669",
+    bg: "rgba(5,150,105,0.15)",
+    title: "Arma tu parche",
+    text: "Registra a tu familia y amigos para que puedan subir todos juntos.",
+  },
+  {
+    Icon: Map,
+    color: "#7c3aed",
+    bg: "rgba(124,58,237,0.15)",
+    title: "Mapa en vivo",
+    text: "Explora el parque y revisa los tiempos de espera en tiempo real.",
+  },
+];
+
+function OnboardingTutorial({ onComplete }) {
+  const [current, setCurrent] = useState(0);
+  const isLast = current === TUTORIAL_SLIDES.length - 1;
+  const slide  = TUTORIAL_SLIDES[current];
+  const { Icon } = slide;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end animate-fade-in"
+      style={{ background: "rgba(10,30,79,0.72)", backdropFilter: "blur(12px)" }}
+    >
+      <div
+        className="w-full rounded-t-3xl animate-slide-up flex flex-col overflow-hidden"
+        style={{
+          background: "rgba(255,255,255,0.07)",
+          backdropFilter: "blur(24px)",
+          border: "1px solid rgba(255,255,255,0.14)",
+          maxHeight: "88vh",
+        }}
+      >
+        {/* Handle */}
+        <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(255,255,255,0.3)" }} />
+        </div>
+
+        {/* Slide dots */}
+        <div className="flex justify-center gap-2 pt-4 pb-2 flex-shrink-0">
+          {TUTORIAL_SLIDES.map((_, i) => (
+            <div
+              key={i}
+              className="rounded-full transition-all duration-300"
+              style={{
+                width: i === current ? 20 : 6,
+                height: 6,
+                background: i === current ? "#fff" : "rgba(255,255,255,0.3)",
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Slide content */}
+        <div key={current} className="flex-1 flex flex-col items-center justify-center px-8 py-8 animate-fade-in">
+          {/* Icon circle */}
+          <div
+            className="w-28 h-28 rounded-3xl flex items-center justify-center mb-8 shadow-xl"
+            style={{ background: slide.bg, border: `1.5px solid ${slide.color}55` }}
+          >
+            <Icon size={56} strokeWidth={1.4} style={{ color: slide.color }} />
+          </div>
+
+          {/* Text */}
+          <h2
+            className="font-black text-3xl text-center leading-tight mb-4"
+            style={{ color: "#fff", textShadow: "0 2px 12px rgba(0,0,0,0.4)" }}
+          >
+            {slide.title}
+          </h2>
+          <p
+            className="text-base text-center leading-relaxed"
+            style={{ color: "rgba(255,255,255,0.75)", maxWidth: 280 }}
+          >
+            {slide.text}
+          </p>
+        </div>
+
+        {/* Footer actions */}
+        <div className="px-6 pb-10 flex-shrink-0 space-y-3">
+          {isLast ? (
+            <button
+              onClick={onComplete}
+              className="w-full py-4 rounded-2xl font-black text-base text-white active:scale-[0.97] transition-all shadow-2xl"
+              style={{ background: "linear-gradient(135deg, #1a56db, #7c3aed)" }}
+            >
+              ¡Comenzar!
+            </button>
+          ) : (
+            <button
+              onClick={() => setCurrent(c => c + 1)}
+              className="w-full py-4 rounded-2xl font-black text-base active:scale-[0.97] transition-all"
+              style={{
+                background: "rgba(255,255,255,0.15)",
+                border: "1.5px solid rgba(255,255,255,0.25)",
+                color: "#fff",
+              }}
+            >
+              Siguiente
+            </button>
+          )}
+          <button
+            onClick={onComplete}
+            className="w-full py-2 text-sm font-semibold text-center active:opacity-60 transition-opacity"
+            style={{ color: "rgba(255,255,255,0.45)" }}
+          >
+            Saltar tutorial
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── ROOT APP ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [screen, setScreen]           = useState("login");
@@ -4588,6 +4714,11 @@ export default function App() {
 
       {toast && (
         <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />
+      )}
+
+      {/* Onboarding — shown once after first sign-up */}
+      {screen === "dashboard" && !hasSeenTutorial && (
+        <OnboardingTutorial onComplete={completeTutorial} />
       )}
     </div>
   );
