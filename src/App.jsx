@@ -3671,7 +3671,7 @@ function QRModal({ title, subtitle, code, onClose }) {
 }
 
 // ─── DETAIL MODAL ─────────────────────────────────────────────────────────────
-function DetailModal({ attraction: a, reservation, waiting, onReserve, onClose }) {
+function DetailModal({ attraction: a, reservation, waiting, onBook, onClose }) {
   const rem = useCooldown(reservation);
   const cooling = reservation && rem > 0;
   const Icon = ATTR_ICON[a.id] || WavePoolIcon;
@@ -3721,7 +3721,7 @@ function DetailModal({ attraction: a, reservation, waiting, onReserve, onClose }
             </div>
           ) : (
             <button
-              onClick={() => { onReserve(a); onClose(); }}
+              onClick={() => { onClose(); onBook(a); }}
               className="w-full bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-bold py-4 rounded-2xl text-base transition-all shadow-lg shadow-brand-200">
               Reservar Fila Virtual
             </button>
@@ -3733,7 +3733,7 @@ function DetailModal({ attraction: a, reservation, waiting, onReserve, onClose }
 }
 
 // ─── ATTRACTION CARD ──────────────────────────────────────────────────────────
-function AttractionCard({ attraction: a, reservation, waiting, onReserve, onDetail, idx = 0 }) {
+function AttractionCard({ attraction: a, reservation, waiting, onBook, onDetail, idx = 0 }) {
   const rem     = useCooldown(reservation);
   const cooling = reservation && rem > 0;
   const pct     = reservation ? Math.min(100, ((Date.now() - reservation.ts) / COOLDOWN_MS) * 100) : 0;
@@ -3797,7 +3797,7 @@ function AttractionCard({ attraction: a, reservation, waiting, onReserve, onDeta
             </div>
           ) : (
             <button
-              onClick={() => onReserve(a)}
+              onClick={() => onBook(a)}
               className="text-white text-xs font-black px-4 py-2.5 rounded-xl active:scale-90 transition-all"
               style={{
                 background: `linear-gradient(135deg, ${a.color}, ${a.color}bb)`,
