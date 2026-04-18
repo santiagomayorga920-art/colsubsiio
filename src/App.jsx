@@ -1418,10 +1418,11 @@ function CapacityBar({ capacity, selected, color }) {
 
 // ─── MAP BOOKING MODAL ────────────────────────────────────────────────────────
 function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldown, onGroupReserve, onNavigateToProfile }) {
-  const [step,       setStep]      = useState("decision"); // 'decision' | 'selection' | 'qr'
-  const [slot,       setSlot]      = useState(null);
-  const [btnState,   setBtnState]  = useState("idle"); // idle | loading | done
-  const [assignedTurns, setAssignedTurns] = useState([]);
+  const [step,           setStep]          = useState("decision"); // 'decision'|'selection'|'qr'
+  const [slot,           setSlot]          = useState(null);
+  const [btnState,       setBtnState]      = useState("idle"); // idle | loading
+  const [assignedTurns,  setAssignedTurns] = useState([]);
+  const [confirmedPeople, setConfirmedPeople] = useState([]);
   const attr = ATTRACTIONS.find(a => a.id === pin.attrId);
   const { Icon } = pin;
 
@@ -1454,8 +1455,8 @@ function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldo
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
     );
 
-  const selectedCount = selectedCompanions.length;
-  const canConfirm    = !!slot && selectedCount > 0 && btnState === "idle";
+  const selectedCount  = selectedCompanions.length;
+  const canConfirm     = !!slot && selectedCount > 0 && btnState === "idle";
 
   const handleConfirm = () => {
     if (!canConfirm) return;
@@ -1470,10 +1471,9 @@ function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldo
       }
       if (result.ok) {
         setAssignedTurns(result.turns);
-        setBtnState("done");
-        setTimeout(() => {
-          onConfirm({ pin, slot, turns: result.turns, eligible: result.eligible, blocked: result.blocked });
-        }, 800);
+        setConfirmedPeople(people);
+        setBtnState("idle");
+        setStep("qr");
       } else {
         setBtnState("idle");
       }
@@ -1795,6 +1795,7 @@ function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldo
 
                   {/* Sticky footer */}
                   <div className="flex-shrink-0 border-t border-gray-100 bg-white px-5 pt-3 pb-7 space-y-3">
+                    {/* Counter row */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className={`w-2 h-2 rounded-full ${selectedCount > 0 ? "bg-brand-500" : "bg-gray-300"}`} />
@@ -1807,10 +1808,12 @@ function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldo
                       </div>
                       {attr && (
                         <span className="text-xs font-semibold text-gray-400">
-                          Capacidad máx: <span className="ml-1 font-black text-gray-700">{attr.capacity}</span>
+                          Máx: <span className="ml-1 font-black text-gray-700">{attr.capacity}</span>
                         </span>
                       )}
                     </div>
+
+                    {/* Overflow warning */}
                     {attr && selectedCount > attr.capacity && (
                       <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 animate-fade-in">
                         <ZapIcon size={11} className="text-amber-500 flex-shrink-0" strokeWidth={2.5} />
@@ -1819,44 +1822,190 @@ function MapBookingModal({ pin, onConfirm, onClose, user, companions, userCooldo
                         </p>
                       </div>
                     )}
+
+                    {/* Slot reminder */}
                     {selectedCount > 0 && !slot && btnState === "idle" && (
                       <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 animate-fade-in">
                         <Timer size={11} className="text-gray-400 flex-shrink-0" strokeWidth={2} />
                         <p className="text-xs text-gray-500 font-medium">Elige un horario para continuar</p>
                       </div>
                     )}
-                    <ConfirmCTA soloMode={false} />
+
+                    {/* Dual action buttons */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { onClose(); onNavigateToProfile?.(); }}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-3.5 rounded-2xl border-2 border-gray-200 bg-white text-gray-600 font-bold text-xs active:scale-[0.97] transition-all hover:border-gray-300"
+                      >
+                        <Users size={13} strokeWidth={2.5} />
+                        Añadir personas
+                      </button>
+                      <button
+                        onClick={handleConfirm}
+                        disabled={!canConfirm}
+                        className={`flex-[1.6] flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-sm transition-all duration-200
+                          ${btnState === "loading"
+                            ? "bg-brand-500 text-white cursor-wait shadow-lg shadow-brand-200"
+                            : canConfirm
+                              ? "bg-brand-600 text-white shadow-lg shadow-brand-300/50 active:scale-[0.97] hover:bg-brand-700"
+                              : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
+                      >
+                        {btnState === "loading" ? (
+                          <svg className="animate-spin" width="15" height="15" viewBox="0 0 16 16" fill="none">
+                            <circle cx="8" cy="8" r="6" stroke="rgba(255,255,255,0.3)" strokeWidth="2.5" />
+                            <path d="M8 2a6 6 0 0 1 6 6" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                          </svg>
+                        ) : (
+                          <QrCode size={14} strokeWidth={2.5} />
+                        )}
+                        {btnState === "loading" ? "Reservando…" : "Confirmar Reserva"}
+                      </button>
+                    </div>
                   </div>
                 </>
               )}
             </>
           )}
 
-          {/* ── QR STEP (Solo) ── */}
+          {/* ── QR STEP ── */}
           {step === "qr" && (
             <>
-              <div className="flex-1 overflow-y-auto px-5 py-6">
-                <button
-                  onClick={() => setStep("decision")}
-                  className="flex items-center gap-1 text-xs font-bold text-brand-500 mb-5 active:opacity-70"
-                >
-                  <ArrowLeft size={13} strokeWidth={2.5} />
-                  Volver
-                </button>
-                <p className="text-[10px] font-black text-gray-400 tracking-widest uppercase mb-3">
-                  Selecciona un horario
-                </p>
-                <SlotPicker />
-              </div>
-              <div className="flex-shrink-0 border-t border-gray-100 bg-white px-5 pt-3 pb-7 space-y-3">
-                {!slot && btnState === "idle" && (
-                  <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
-                    <Timer size={11} className="text-gray-400 flex-shrink-0" strokeWidth={2} />
-                    <p className="text-xs text-gray-500 font-medium">Elige un horario para continuar</p>
+              {/* Sub-view A: solo slot selection (before confirm) */}
+              {assignedTurns.length === 0 && (
+                <>
+                  <div className="flex-1 overflow-y-auto px-5 py-5">
+                    <button
+                      onClick={() => setStep("decision")}
+                      className="flex items-center gap-1 text-xs font-bold text-brand-500 mb-5 active:opacity-70"
+                    >
+                      <ArrowLeft size={13} strokeWidth={2.5} />
+                      Volver
+                    </button>
+                    <p className="text-[10px] font-black text-gray-400 tracking-widest uppercase mb-3">
+                      Selecciona un horario
+                    </p>
+                    <SlotPicker />
                   </div>
-                )}
-                <ConfirmCTA soloMode={true} />
-              </div>
+                  <div className="flex-shrink-0 border-t border-gray-100 bg-white px-5 pt-3 pb-7 space-y-3">
+                    {!slot && btnState === "idle" && (
+                      <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+                        <Timer size={11} className="text-gray-400 flex-shrink-0" strokeWidth={2} />
+                        <p className="text-xs text-gray-500 font-medium">Elige un horario para continuar</p>
+                      </div>
+                    )}
+                    <button
+                      onClick={handleConfirm}
+                      disabled={!canConfirm}
+                      className={`w-full flex items-center justify-center gap-2 font-black py-4 rounded-2xl text-sm transition-all duration-300
+                        ${btnState === "loading"
+                          ? "bg-brand-500 text-white shadow-lg shadow-brand-200 cursor-wait"
+                          : canConfirm
+                            ? "bg-brand-600 hover:bg-brand-700 active:scale-[0.97] text-white shadow-lg shadow-brand-300/50"
+                            : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
+                    >
+                      {btnState === "loading" ? (
+                        <svg className="animate-spin" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                          <circle cx="8" cy="8" r="6" stroke="rgba(255,255,255,0.3)" strokeWidth="2.5" />
+                          <path d="M8 2a6 6 0 0 1 6 6" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                        </svg>
+                      ) : <QrCode size={16} strokeWidth={2.5} />}
+                      <span>{btnState === "loading" ? "Generando Fast Pass…" : (slot ? "Obtener Fast Pass" : "Selecciona un horario")}</span>
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* Sub-view B: premium ticket */}
+              {assignedTurns.length > 0 && (
+                <div className="flex-1 overflow-y-auto animate-fade-in">
+                  {/* Success banner */}
+                  <div className="bg-gradient-to-b from-emerald-500 to-emerald-600 px-5 pt-5 pb-10 text-center">
+                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
+                      <svg width="24" height="19" viewBox="0 0 24 19" fill="none">
+                        <path d="M2 9.5L8.5 16L22 2" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                    <p className="font-black text-white text-lg leading-tight">¡Fast Pass Activado!</p>
+                    <p className="text-emerald-100 text-xs mt-1 font-medium">
+                      {assignedTurns.length === 1
+                        ? `Turno #${assignedTurns[0].turnNumber}`
+                        : `Turnos: ${assignedTurns.map(t => `#${t.turnNumber}`).join(", ")}`}
+                    </p>
+                  </div>
+
+                  {/* Ticket card */}
+                  <div className="mx-4 -mt-6 bg-white rounded-3xl shadow-xl overflow-hidden mb-5">
+                    {/* Perforated tear strip */}
+                    <div className="relative flex items-center py-3">
+                      <div className="absolute -left-3 w-6 h-6 rounded-full bg-gray-50" />
+                      <div className="flex-1 mx-4 border-t-2 border-dashed border-gray-200" />
+                      <div className="absolute -right-3 w-6 h-6 rounded-full bg-gray-50" />
+                    </div>
+
+                    {/* QR code block */}
+                    <div className="flex flex-col items-center px-5 pb-5">
+                      <div className="w-44 h-44 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center justify-center p-4">
+                        <QrCode size={120} strokeWidth={1.2} className="text-gray-900" />
+                      </div>
+
+                      {/* Turn badge */}
+                      <div className="mt-4 px-5 py-2 rounded-full border-2 flex items-center gap-2"
+                           style={{ borderColor: pin.color + "55", background: pin.color + "11" }}>
+                        <Ticket size={14} strokeWidth={2.5} style={{ color: pin.color }} />
+                        <span className="font-black text-base" style={{ color: pin.color }}>
+                          {assignedTurns.length === 1
+                            ? `Turno #${assignedTurns[0].turnNumber}`
+                            : `Turnos: ${assignedTurns.map(t => `#${t.turnNumber}`).join(", ")}`}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Perforated divider */}
+                    <div className="relative flex items-center">
+                      <div className="absolute -left-3 w-6 h-6 rounded-full bg-gray-50" />
+                      <div className="flex-1 mx-4 border-t-2 border-dashed border-gray-100" />
+                      <div className="absolute -right-3 w-6 h-6 rounded-full bg-gray-50" />
+                    </div>
+
+                    {/* Details */}
+                    <div className="px-5 py-4 space-y-2.5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                          <Clock size={13} strokeWidth={2} className="text-gray-500" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-gray-400 tracking-widest uppercase">Horario</p>
+                          <p className="text-sm font-bold text-gray-800">
+                            {MAP_TIME_SLOTS.find(s => s.id === slot)?.label ?? "—"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Users size={13} strokeWidth={2} className="text-gray-500" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-gray-400 tracking-widest uppercase">Incluidos</p>
+                          <p className="text-sm font-bold text-gray-800 leading-snug">
+                            {confirmedPeople.map(p => p.isUser ? (user?.name ?? "Tú") : p.name).join(" · ")}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Close CTA */}
+                  <div className="px-4 pb-8">
+                    <button
+                      onClick={() => onConfirm({ pin, slot, turns: assignedTurns, eligible: confirmedPeople, blocked: [] })}
+                      className="w-full py-4 rounded-2xl font-black text-sm text-white active:scale-[0.97] transition-all shadow-lg shadow-emerald-300/40"
+                      style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
+                    >
+                      ¡Listo · Cerrar!
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
 
