@@ -3486,7 +3486,15 @@ function Dashboard({ user, reservations, onReserve, onLogout, fastPass, setFastP
       <div className="flex-1 overflow-hidden flex flex-col min-h-0 relative">
         <div className="flex-1 overflow-y-auto">
           {activeTab === "atracciones" && (
-            <AttractionsTab reservations={reservations} onReserve={onReserve} onToast={onToast} />
+            <AttractionsTab
+              reservations={reservations}
+              onToast={onToast}
+              user={user}
+              companions={companions}
+              userCooldown={userCooldown}
+              onGroupReserve={onGroupReserve}
+              onNavigateToProfile={() => setActiveTab("perfil")}
+            />
           )}
           {activeTab === "mapa"     && <MapTab user={user} companions={companions} userCooldown={userCooldown} onGroupReserve={onGroupReserve} onNavigateToProfile={() => setActiveTab("perfil")} />}
           {activeTab === "comida"   && <FoodTab onToast={onToast} />}
@@ -4271,30 +4279,26 @@ function AttractionBookingModal({ attr, onClose, user, companions, userCooldown,
 }
 
 // ─── ATTRACTIONS TAB ──────────────────────────────────────────────────────────
-function AttractionsTab({ reservations, onReserve, onToast }) {
-  const [detail, setDetail] = useState(null);
-  const [qr, setQr]         = useState(null);
-  const [waitCounts]        = useState(() =>
+function AttractionsTab({ reservations, onToast, user, companions, userCooldown, onGroupReserve, onNavigateToProfile }) {
+  const [detail,      setDetail]      = useState(null);
+  const [bookingAttr, setBookingAttr] = useState(null);
+  const [waitCounts]                  = useState(() =>
     Object.fromEntries(ATTRACTIONS.map(a => [a.id, Math.floor(Math.random() * (a.waitMax - a.waitMin + 1)) + a.waitMin]))
   );
 
-  const handleReserve = useCallback((attr) => {
-    const ok = onReserve(attr);
-    if (ok) {
-      const code = `VQ-${attr.id.slice(0,3).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
-      setQr({ title: `Fila: ${attr.name}`, subtitle: "Preséntalo en la entrada de la atracción", code });
-      onToast(`¡Turno reservado en ${attr.name}!`, "success");
-    }
-  }, [onReserve, onToast]);
+  const openBooking = useCallback((attr) => {
+    setDetail(null);       // close detail sheet if open
+    setBookingAttr(attr);
+  }, []);
 
   const coolingCount = ATTRACTIONS.filter(a => {
     const res = [...reservations].filter(r => r.attractionId === a.id).sort((x,y) => y.ts - x.ts)[0];
-    return res && (COOLDOWN_MS - (Date.now() - res.ts)) > 0;
+    return res && (GROUP_COOLDOWN_MS - (Date.now() - res.ts)) > 0;
   }).length;
 
   return (
     <div className="px-4 py-4 space-y-3 pb-6">
-      {/* Stats row — colored cards with icons + stagger */}
+      {/* Stats row */}
       <div className="grid grid-cols-3 gap-2">
         {[
           { label: "Reservas",    value: reservations.length,              Icon: Ticket,       color: "#1648b8", bg: "#eff6ff", border: "#bfdbfe" },
@@ -4318,7 +4322,7 @@ function AttractionsTab({ reservations, onReserve, onToast }) {
       <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2.5">
         <Clock size={13} className="text-amber-500 flex-shrink-0" strokeWidth={2.5} />
         <p className="text-xs text-amber-700 font-medium">
-          <span className="font-bold">Cooldown de 2h</span> entre reservas por atracción
+          <span className="font-bold">Cooldown de 45 min</span> tras reservar en grupo
         </p>
       </div>
 
@@ -4335,7 +4339,7 @@ function AttractionsTab({ reservations, onReserve, onToast }) {
             attraction={a}
             reservation={res}
             waiting={waitCounts[a.id]}
-            onReserve={handleReserve}
+            onBook={openBooking}
             onDetail={setDetail}
           />
         );
@@ -4346,11 +4350,22 @@ function AttractionsTab({ reservations, onReserve, onToast }) {
           attraction={detail}
           reservation={[...reservations].filter(r => r.attractionId === detail.id).sort((x,y) => y.ts - x.ts)[0]}
           waiting={waitCounts[detail.id]}
-          onReserve={handleReserve}
+          onBook={openBooking}
           onClose={() => setDetail(null)}
         />
       )}
-      {qr && <QRModal {...qr} onClose={() => setQr(null)} />}
+
+      {bookingAttr && (
+        <AttractionBookingModal
+          attr={bookingAttr}
+          onClose={() => { setBookingAttr(null); onToast(`¡Turno reservado en ${bookingAttr.name}!`, "success"); }}
+          user={user}
+          companions={companions}
+          userCooldown={userCooldown}
+          onGroupReserve={onGroupReserve}
+          onNavigateToProfile={onNavigateToProfile}
+        />
+      )}
     </div>
   );
 }
