@@ -3163,7 +3163,7 @@ function CooldownBar({ cooldownUntil }) {
   );
 }
 
-function ProfileTab({ user, companions, userCooldown, onAddCompanion, onRemoveCompanion }) {
+function ProfileTab({ user, companions, userCooldown, onAddCompanion, onRemoveCompanion, onResetTutorial }) {
   const [showAdd,    setShowAdd]    = useState(false);
   const [form,       setForm]       = useState({ name: "", dob: "" });
   const [errs,       setErrs]       = useState({});
@@ -3470,13 +3470,26 @@ function ProfileTab({ user, companions, userCooldown, onAddCompanion, onRemoveCo
           </div>
         </div>
       )}
+
+      {/* ── Dev: reset tutorial ── */}
+      {onResetTutorial && (
+        <div className="px-5 pt-2 pb-6">
+          <button
+            onClick={onResetTutorial}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 text-xs font-bold active:scale-[0.97] transition-all hover:border-brand-200 hover:text-brand-400"
+          >
+            <RefreshCw size={13} strokeWidth={2.5} />
+            Reset Tutorial
+          </button>
+        </div>
+      )}
     </>
   );
 }
 
 function Dashboard({ user, reservations, onReserve, onLogout, fastPass, setFastPass, onToast, showFPPopup, onDismissPopup,
                      companions, userCooldown, onAddCompanion, onRemoveCompanion, onApplyUserCooldown, onApplyCompanionCooldown,
-                     onGroupReserve }) {
+                     onGroupReserve, onResetTutorial }) {
   const [activeTab, setActiveTab] = useState("atracciones");
 
   return (
@@ -3508,6 +3521,7 @@ function Dashboard({ user, reservations, onReserve, onLogout, fastPass, setFastP
               userCooldown={userCooldown}
               onAddCompanion={onAddCompanion}
               onRemoveCompanion={onRemoveCompanion}
+              onResetTutorial={onResetTutorial}
             />
           )}
         </div>
@@ -4403,7 +4417,7 @@ function OnboardingTutorial({ onComplete }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end animate-fade-in"
+      className="absolute inset-0 z-50 flex items-end animate-fade-in"
       style={{ background: "rgba(10,30,79,0.72)", backdropFilter: "blur(12px)" }}
     >
       <div
@@ -4707,18 +4721,19 @@ export default function App() {
               onApplyUserCooldown={applyUserCooldown}
               onApplyCompanionCooldown={applyCompanionCooldown}
               onGroupReserve={handleGroupReserve}
+              onResetTutorial={() => setHasSeenTutorial(false)}
             />
           )}
         </div>
+
+        {/* Onboarding — absolute inside phone frame, shown once after sign-up */}
+        {screen === "dashboard" && hasSeenTutorial === false && (
+          <OnboardingTutorial onComplete={completeTutorial} />
+        )}
       </div>
 
       {toast && (
         <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />
-      )}
-
-      {/* Onboarding — shown once after first sign-up */}
-      {screen === "dashboard" && !hasSeenTutorial && (
-        <OnboardingTutorial onComplete={completeTutorial} />
       )}
     </div>
   );
